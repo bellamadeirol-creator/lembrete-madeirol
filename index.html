@@ -58,6 +58,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 .aviso{font-size:13px;color:#70432B;line-height:1.55;margin:0}
 .passos{margin:0;padding:18px 22px 18px 40px;background:#F7EEE6;border-radius:var(--r);display:grid;gap:8px;font-size:14px;line-height:1.55;color:#5a3422}
 .passos b{color:var(--cocoa)}
+.ativar{margin-top:22px;gap:16px}
+.ativar-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.ativar h3{margin:6px 0 0;font-size:22px;font-weight:300;letter-spacing:-.02em}
+.selo{flex-shrink:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:8px 14px;border-radius:999px;background:#f3d9d5;color:#a1322a}
+.selo.ok{background:#dcefdf;color:#2f6b3a}
+body.modo-teste .topo,body.modo-teste .painel{display:none}
+.teste-ok{min-height:100svh;display:grid;place-items:center;text-align:center;padding:24px;font-size:22px}
 body.modo-alerta .topo,body.modo-alerta .painel{display:none}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--cocoa);color:#fff;padding:12px 22px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:50;border-radius:999px}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -161,30 +168,31 @@ h1 strong{font-weight:750;color:#4A2818}
       <input type="text" id="destaque" maxlength="220">
     </div>
 
-    <div class="campo">
-      <label for="modo">Como o lembrete abre no computador</label>
-      <select id="modo">
-        <option value="aba">Nova guia no Chrome, na conta que a pessoa usa</option>
-        <option value="tela">Janela do Chrome em tela cheia, por cima de tudo</option>
-      </select>
-    </div>
-
     <div class="proximo" id="proximo"></div>
 
     <div class="acoes">
-      <button type="submit" class="btn">Salvar e baixar instalador</button>
+      <button type="submit" class="btn">Salvar</button>
       <button type="button" class="btn sec" id="btn-testar">Ver prévia</button>
-      <button type="button" class="btn sec" id="btn-remover">Baixar desinstalador</button>
     </div>
-    <ol class="passos">
-      <li>Clique em <b>Salvar e baixar instalador</b>. Vai baixar o arquivo <b>instalar-lembrete-madeirol.bat</b>.</li>
-      <li>No computador da pessoa, dê dois cliques nele. Se o Windows avisar, clique em <b>Mais informações → Executar assim mesmo</b>.</li>
-      <li>Vai abrir o explorador de arquivos: selecione o <b>chrome.exe</b> (normalmente já aparece selecionado, é só clicar em Abrir).</li>
-      <li>Depois, escolha em qual <b>conta do Chrome</b> o lembrete deve abrir.</li>
-      <li>Pronto: no horário, o Windows abre sozinho uma <b>nova guia</b> com o comunicado, sem fechar nada do que estiver aberto.</li>
-    </ol>
-    <p class="aviso">Não precisa deixar esta página aberta. Se o computador estiver desligado no horário, o lembrete aparece assim que a pessoa ligar e entrar no Windows. Mudou dia, horário ou mensagem? Baixe e rode o instalador de novo: ele substitui o anterior.</p>
   </form>
+
+  <section class="cartao ativar">
+    <div class="ativar-topo">
+      <div>
+        <span class="rotulo">Neste computador</span>
+        <h3 id="ativo-titulo">Lembrete ainda não ativado</h3>
+      </div>
+      <span class="selo" id="ativo-selo">Desativado</span>
+    </div>
+    <p class="aviso" id="ativo-texto">Clique no botão abaixo uma vez. No horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.</p>
+    <div class="acoes"><button type="button" class="btn" id="btn-ativar">Ativar neste computador</button></div>
+    <ol class="passos oculto" id="ativo-ajuda">
+      <li>Olhe no canto direito da barra de endereço do Chrome: apareceu um ícone de <b>janela bloqueada</b>.</li>
+      <li>Clique nele, marque <b>Sempre permitir pop-ups e redirecionamentos</b> e clique em <b>Concluído</b>.</li>
+      <li>Clique de novo em <b>Ativar neste computador</b>.</li>
+    </ol>
+    <p class="aviso"><b>Importante:</b> deixe esta página aberta numa guia do Chrome (clique com o botão direito na guia → <b>Fixar</b>). Pode trabalhar normalmente em outras guias e programas. Se o computador estava desligado no horário, o lembrete abre assim que esta página for aberta no mesmo dia.</p>
+  </section>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -219,11 +227,28 @@ h1 strong{font-weight:750;color:#4A2818}
 (() => {
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
+  const ler = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
+  const gravar = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
+  const K_CFG = 'madeirol_lembrete_cfg', K_ACK = 'madeirol_lembrete_ack', K_FIRED = 'madeirol_lembrete_disparo',
+        K_SNOOZE = 'madeirol_lembrete_snooze', K_VIVO = 'madeirol_lembrete_vivo', K_ATIVO = 'madeirol_lembrete_ativo';
+  const ULTIMO = 32; // "último dia do mês"
 
-  /* ---------- tela do lembrete (comum aos dois modos) ---------- */
+  const PADRAO = {
+    tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00',
+    titulo: 'Lembrete mensal',
+    mensagem: 'Não se esqueça de enviar seu relatório mensal para o Gilmar.',
+    destaque: 'relatório mensal para o Gilmar.'
+  };
+  let cfg = { ...PADRAO };
+  try {
+    const s = JSON.parse(ler(K_CFG) || 'null');
+    if (s) { cfg = { ...PADRAO, ...s }; if (!Array.isArray(s.diasMes) && s.dia) cfg.diasMes = [s.dia]; }
+  } catch(e) {}
+
+  /* ================= TELA DO LEMBRETE ================= */
   const tela = $('tela-lembrete');
   const alvo = document.querySelector('.texto-digitado');
-  let timerDigitar = null, timerTitulo = null, timerInsistir = null;
+  let timerDigitar = null, timerTitulo = null, timerInsistir = null, timerVivo = null;
   const tituloOriginal = document.title;
 
   function montar(frase, destaque, pos) {
@@ -275,82 +300,77 @@ h1 strong{font-weight:750;color:#4A2818}
       });
     } catch(e) {}
   }
-  function mostrar(dados, real) {
+  function notificar() {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const n = new Notification('🔔 ' + cfg.titulo, { body: cfg.mensagem, requireInteraction: true, renotify: true, tag: 'madeirol-lembrete' });
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch(e) {}
+  }
+
+  let chaveAtual = null;
+  function mostrar(dados, chave) {
+    chaveAtual = chave;
     $('txt-titulo').textContent = dados.titulo;
     tela.classList.add('ativo');
     document.body.style.overflow = 'hidden';
     telaCheia();
     digitar(dados.mensagem, dados.destaque);
     $('btn-ok').focus({ preventScroll: true });
-    if (!real) return;
+    if (chave == null) return; // prévia
+    try { window.focus(); } catch(e) {}
     bip();
     let alt = false;
     timerTitulo = setInterval(() => { document.title = (alt = !alt) ? '🔔 ' + dados.titulo.toUpperCase() : tituloOriginal; }, 900);
-    timerInsistir = setInterval(bip, 30000); // toca de novo até alguém confirmar
+    timerInsistir = setInterval(() => { bip(); notificar(); }, 30000);
+    gravar(K_VIVO, String(Date.now()));
+    timerVivo = setInterval(() => gravar(K_VIVO, String(Date.now())), 5000);
   }
   function esconder() {
     tela.classList.remove('ativo');
     document.body.style.overflow = '';
-    clearTimeout(timerDigitar); clearInterval(timerTitulo); clearInterval(timerInsistir);
+    [timerTitulo, timerInsistir, timerVivo].forEach(clearInterval); clearTimeout(timerDigitar);
     document.title = tituloOriginal;
     sairTelaCheia();
   }
   tela.addEventListener('pointerdown', e => { if (!e.target.closest('button')) telaCheia(); });
 
-  /* =========================================================
-     MODO ALERTA — aberto pelo Agendador de Tarefas do Windows
-     ========================================================= */
+  function confirmar(adiar) {
+    if (chaveAtual) gravar(K_ACK, chaveAtual);
+    if (adiar) gravar(K_SNOOZE, String(Date.now() + 10 * 60 * 1000));
+    gravar(K_VIVO, '');
+    const eraGuia = params.has('alerta');
+    chaveAtual = null; esconder();
+    if (eraGuia) {
+      window.close(); // guia aberta pelo próprio site: fecha sozinha
+      setTimeout(() => { document.body.innerHTML = '<div class="teste-ok">Tudo certo. Pode fechar esta guia.</div>'; }, 300);
+    } else if (adiar) aviso('Vou lembrar de novo em 10 minutos.');
+  }
+  $('btn-ok').addEventListener('click', () => confirmar(false));
+  $('btn-adiar').addEventListener('click', () => confirmar(true));
+
+  /* ================= GUIA DO ALERTA ================= */
   if (params.has('alerta')) {
     document.body.classList.add('modo-alerta');
-    $('btn-adiar').classList.add('oculto');
-    mostrar({
-      titulo: params.get('t') || 'Lembrete',
-      mensagem: params.get('m') || '',
-      destaque: params.get('d') || ''
-    }, true);
-    $('btn-ok').addEventListener('click', () => {
-      clearInterval(timerInsistir); clearInterval(timerTitulo);
-      window.close();
-      // se o navegador não deixar fechar sozinho, orienta a pessoa
-      setTimeout(() => {
-        $('btn-ok').textContent = 'Pode fechar com Alt + F4';
-        $('btn-ok').disabled = true;
-      }, 400);
-    });
+    mostrar(cfg, params.get('k') || 'alerta');
     return;
   }
 
-  /* =========================================================
-     MODO PAINEL — configuração e instalador
-     ========================================================= */
-  $('btn-adiar').classList.add('oculto');
-  $('btn-ok').addEventListener('click', esconder);
+  /* ================= GUIA DE TESTE (ativação) ================= */
+  if (params.has('teste')) {
+    document.body.classList.add('modo-teste');
+    document.body.insertAdjacentHTML('beforeend', '<div class="teste-ok">✓ Funcionou! Esta guia vai fechar sozinha.</div>');
+    gravar(K_ATIVO, String(Date.now()));
+    setTimeout(() => window.close(), 1800);
+    return;
+  }
 
-  const K_CFG = 'madeirol_lembrete_cfg';
-  const ler = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
-  const gravar = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
-  const ULTIMO = 32; // "último dia do mês"
-
-  const PADRAO = {
-    tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00', modo: 'aba',
-    titulo: 'Lembrete mensal',
-    mensagem: 'Não se esqueça de enviar seu relatório mensal para o Gilmar.',
-    destaque: 'relatório mensal para o Gilmar.'
-  };
-  let cfg = { ...PADRAO };
-  try {
-    const s = JSON.parse(ler(K_CFG) || 'null');
-    if (s) { cfg = { ...PADRAO, ...s }; if (!Array.isArray(s.diasMes) && s.dia) cfg.diasMes = [s.dia]; }
-  } catch(e) {}
-
+  /* ================= PAINEL ================= */
   const SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const SEMANA_LONGA = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-  const SEMANA_XML = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const MESES_XML = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const lista = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
   const nomeDia = n => n === ULTIMO ? 'último dia' : String(n);
 
-  /* ---------- formulário ---------- */
   let h = '';
   for (let d = 1; d <= 31; d++) h += `<label><input type="checkbox" value="${d}"><span>${d}</span></label>`;
   h += `<label class="ultimo"><input type="checkbox" value="${ULTIMO}"><span>Último dia</span></label>`;
@@ -361,7 +381,6 @@ h1 strong{font-weight:750;color:#4A2818}
   function preencher() {
     $('tipo').value = cfg.tipo; $('data').value = cfg.data; $('hora').value = cfg.hora;
     $('titulo').value = cfg.titulo; $('mensagem').value = cfg.mensagem; $('destaque').value = cfg.destaque;
-    $('modo').value = cfg.modo;
     document.querySelectorAll('#mes input').forEach(c => c.checked = cfg.diasMes.includes(+c.value));
     document.querySelectorAll('#dias input').forEach(c => c.checked = cfg.dias.includes(+c.value));
     alternarCampos();
@@ -373,7 +392,7 @@ h1 strong{font-weight:750;color:#4A2818}
     $('campo-semana').classList.toggle('oculto', t !== 'semanal');
     const dm = marcados('#mes');
     $('dica-mes').innerHTML = dm.length
-      ? `Selecionados: <b>${lista(dm.map(nomeDia))}</b>. Dias 29 e 30 não acontecem em fevereiro; o 31 vale como último dia do mês. <button type="button" class="limpar" id="limpar">Limpar</button>`
+      ? `Selecionados: <b>${lista(dm.map(nomeDia))}</b>. Em meses mais curtos, dias como 30 e 31 caem no último dia. <button type="button" class="limpar" id="limpar">Limpar</button>`
       : 'Clique nos dias em que o lembrete deve aparecer. Pode marcar mais de um.';
     const lp = $('limpar');
     if (lp) lp.onclick = () => { document.querySelectorAll('#mes input').forEach(c => c.checked = false); alternarCampos(); };
@@ -390,8 +409,7 @@ h1 strong{font-weight:750;color:#4A2818}
       hora: $('hora').value || '09:00',
       titulo: $('titulo').value.trim() || PADRAO.titulo,
       mensagem: $('mensagem').value.trim() || PADRAO.mensagem,
-      destaque: $('destaque').value.trim(),
-      modo: $('modo').value
+      destaque: $('destaque').value.trim()
     };
   }
 
@@ -401,35 +419,37 @@ h1 strong{font-weight:750;color:#4A2818}
     if (novo.tipo === 'mensal' && !novo.diasMes.length) return aviso('Escolha pelo menos um dia do mês.');
     if (novo.tipo === 'semanal' && !novo.dias.length) return aviso('Escolha pelo menos um dia da semana.');
     if (novo.tipo === 'unico' && !novo.data) return aviso('Escolha a data.');
-    if (novo.tipo === 'unico' && new Date(`${novo.data}T${novo.hora}:00`) <= new Date()) return aviso('Essa data e horário já passaram.');
     cfg = novo;
     gravar(K_CFG, JSON.stringify(cfg));
+    const u = ultima(new Date()); gravar(K_ACK, u ? String(u.getTime()) : ''); // não dispara por horário que já passou
+    gravar(K_SNOOZE, '');
     preencher(); mostrarProximo();
-    baixar('instalar-lembrete-madeirol.bat', gerarInstalador(cfg));
-    aviso('Salvo. Instalador baixado.');
+    aviso('Lembrete salvo.');
   });
 
-  /* ---------- próxima ocorrência (só para exibir) ---------- */
+  $('btn-testar').addEventListener('click', () => mostrar(lerForm(), null));
+
+  /* ---------- datas ---------- */
   const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function noHorario(d) { const [hh, mm] = cfg.hora.split(':').map(Number); const c = new Date(d); c.setHours(hh, mm, 0, 0); return c; }
   function casa(d) {
     switch (cfg.tipo) {
       case 'diario': return true;
       case 'semanal': return cfg.dias.includes(d.getDay());
       case 'mensal': {
         const ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        return cfg.diasMes.some(x => (x >= 31 ? ult : x) === d.getDate()); // igual ao Agendador do Windows
+        return cfg.diasMes.some(x => Math.min(x, ult) === d.getDate());
       }
       case 'unico': return iso(d) === cfg.data;
     }
     return false;
   }
+  function ultima(agora) {
+    for (let i = 0; i <= 400; i++) { const d = new Date(agora); d.setDate(d.getDate() - i); if (!casa(d)) continue; const c = noHorario(d); if (c <= agora) return c; }
+    return null;
+  }
   function proxima(agora) {
-    const [hh, mm] = cfg.hora.split(':').map(Number);
-    for (let i = 0; i <= 400; i++) {
-      const d = new Date(agora); d.setDate(d.getDate() + i);
-      if (!casa(d)) continue;
-      d.setHours(hh, mm, 0, 0); if (d > agora) return d;
-    }
+    for (let i = 0; i <= 400; i++) { const d = new Date(agora); d.setDate(d.getDate() + i); if (!casa(d)) continue; const c = noHorario(d); if (c > agora) return c; }
     return null;
   }
   function mostrarProximo() {
@@ -444,187 +464,67 @@ h1 strong{font-weight:750;color:#4A2818}
     $('proximo').innerHTML = `${regra}<br>Próximo lembrete: <b>${quando}</b>`;
   }
 
-  /* ---------- gerador do instalador (.bat) ---------- */
-  function gatilhoXml(c) {
-    const hoje = new Date();
-    const inicio = c.tipo === 'unico' ? `${c.data}T${c.hora}:00` : `${iso(hoje)}T${c.hora}:00`;
-    if (c.tipo === 'unico') return `<TimeTrigger><StartBoundary>${inicio}</StartBoundary><Enabled>true</Enabled></TimeTrigger>`;
-    let corpo;
-    if (c.tipo === 'diario') corpo = '<ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>';
-    else if (c.tipo === 'semanal') corpo = `<ScheduleByWeek><DaysOfWeek>${c.dias.map(i => `<${SEMANA_XML[i]} />`).join('')}</DaysOfWeek><WeeksInterval>1</WeeksInterval></ScheduleByWeek>`;
-    else {
-      const dias = [...new Set(c.diasMes.map(x => x >= 31 ? 'Last' : String(x)))];
-      corpo = `<ScheduleByMonth><DaysOfMonth>${dias.map(x => `<Day>${x}</Day>`).join('')}</DaysOfMonth><Months>${MESES_XML.map(m => `<${m} />`).join('')}</Months></ScheduleByMonth>`;
+  /* ---------- disparo: abre uma nova guia ---------- */
+  function disparar(chave) {
+    gravar(K_FIRED, chave + '|' + Date.now());
+    notificar();
+    let guia = null;
+    try { guia = window.open(location.pathname + '?alerta=1&k=' + encodeURIComponent(chave), '_blank'); } catch(e) {}
+    if (guia) { try { guia.focus(); } catch(e) {} }
+    else mostrar(cfg, chave); // pop-up bloqueado: mostra aqui mesmo
+  }
+
+  const UM_DIA = 864e5, DEZ_MIN = 6e5;
+  function verificar() {
+    if (tela.classList.contains('ativo')) return;
+    const agora = Date.now();
+    const alertaAberto = agora - Number(ler(K_VIVO) || 0) < 15000; // outra guia já está mostrando
+    if (alertaAberto) return;
+
+    const adiado = Number(ler(K_SNOOZE) || 0);
+    if (adiado && agora >= adiado) { gravar(K_SNOOZE, ''); disparar('adiado-' + adiado); return; }
+
+    const u = ultima(new Date(agora));
+    if (u && agora - u < UM_DIA) {
+      const chave = String(u.getTime());
+      if (ler(K_ACK) !== chave) {
+        const [ultChave, ultHora] = (ler(K_FIRED) || '|').split('|');
+        // dispara se ainda não disparou, ou se disparou há 10 min e ninguém confirmou
+        if (ultChave !== chave || agora - Number(ultHora || 0) > DEZ_MIN) disparar(chave);
+      }
     }
-    return `<CalendarTrigger><StartBoundary>${inicio}</StartBoundary><Enabled>true</Enabled>${corpo}</CalendarTrigger>`;
+    mostrarProximo();
   }
 
-  function urlAlerta(c) {
-    const base = location.origin + location.pathname;
-    return `${base}?alerta=1&t=${encodeURIComponent(c.titulo)}&m=${encodeURIComponent(c.mensagem)}&d=${encodeURIComponent(c.destaque)}`;
+  /* ---------- ativação neste computador ---------- */
+  function estadoAtivo() {
+    const ok = !!ler(K_ATIVO);
+    $('ativo-selo').textContent = ok ? 'Ativo' : 'Desativado';
+    $('ativo-selo').classList.toggle('ok', ok);
+    $('ativo-titulo').textContent = ok ? 'Lembrete ativo neste computador' : 'Lembrete ainda não ativado';
+    $('ativo-texto').textContent = ok
+      ? 'Tudo certo: no horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.'
+      : 'Clique no botão abaixo uma vez. No horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.';
+    $('btn-ativar').textContent = ok ? 'Testar de novo' : 'Ativar neste computador';
   }
-
-  const NOME_TAREFA = 'Madeirol - Lembrete';
-  const psStr = s => "'" + String(s).replace(/'/g, "''") + "'";
-
-  function cabecalhoBat(titulo) {
-    return [
-      '@echo off',
-      `title ${titulo}`,
-      'powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "$c = Get-Content -LiteralPath \'%~f0\' -Raw -Encoding UTF8; iex (($c -split \'(?m)^#PS#\\r?\\n\', 2)[1])"',
-      'echo.',
-      'pause',
-      'goto :eof',
-      '#PS#',
-      ''
-    ].join('\r\n');
-  }
-
-  function gerarInstalador(c) {
-    const ps = `
-$ErrorActionPreference = 'Stop'
-$nome = ${psStr(NOME_TAREFA)}
-$url  = ${psStr(urlAlerta(c))}
-Write-Host ''
-Write-Host '  MADEIROL - instalando lembrete' -ForegroundColor Yellow
-Write-Host '  ${c.titulo.replace(/'/g, "''")}'
-Write-Host ''
-$cands = @(
-  "$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe",
-  "\${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe",
-  "$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe",
-  "\${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe",
-  "$env:ProgramFiles\\Microsoft\\Edge\\Application\\msedge.exe"
-)
-Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-[System.Windows.Forms.Application]::EnableVisualStyles()
-$detectado = $cands | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-
-# 1) escolher o chrome.exe pelo explorador de arquivos
-$dlg = New-Object System.Windows.Forms.OpenFileDialog
-$dlg.Title = 'Madeirol: selecione o chrome.exe deste computador'
-$dlg.Filter = 'Navegador (chrome.exe, msedge.exe)|chrome.exe;msedge.exe|Programas (*.exe)|*.exe'
-if ($detectado) { $dlg.InitialDirectory = Split-Path $detectado; $dlg.FileName = Split-Path $detectado -Leaf }
-else { $dlg.InitialDirectory = $env:ProgramFiles }
-$dono = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true }
-Write-Host '  1/2  Selecione o chrome.exe na janela que abriu...'
-if ($dlg.ShowDialog($dono) -ne 'OK') { Write-Host '  Instalacao cancelada.' -ForegroundColor Red; return }
-$exe = $dlg.FileName
-Write-Host ('       Navegador: ' + $exe)
-
-# 2) escolher a conta (perfil) do Chrome
-$modo = ${psStr(c.modo)}
-$perfil = 'Default'
-if ($modo -eq 'aba') {
-  $dadosUsuario = if ($exe -like '*msedge.exe') { Join-Path $env:LOCALAPPDATA 'Microsoft\\Edge\\User Data' } else { Join-Path $env:LOCALAPPDATA 'Google\\Chrome\\User Data' }
-  $contas = @()
-  try {
-    $estado = Get-Content -LiteralPath (Join-Path $dadosUsuario 'Local State') -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($item in $estado.profile.info_cache.PSObject.Properties) {
-      $rotulo = $item.Value.name
-      if ($item.Value.user_name) { $rotulo += '   (' + $item.Value.user_name + ')' }
-      $contas += [pscustomobject]@{ Pasta = $item.Name; Rotulo = $rotulo }
-    }
-  } catch {
-    Get-ChildItem -LiteralPath $dadosUsuario -Directory -ErrorAction SilentlyContinue |
-      Where-Object { $_.Name -eq 'Default' -or $_.Name -like 'Profile *' } |
-      ForEach-Object { $contas += [pscustomobject]@{ Pasta = $_.Name; Rotulo = $_.Name } }
-  }
-  if ($contas.Count -eq 1) { $perfil = $contas[0].Pasta }
-  elseif ($contas.Count -gt 1) {
-    Write-Host '  2/2  Escolha a conta do Chrome na janela que abriu...'
-    $f = New-Object System.Windows.Forms.Form
-    $f.Text = 'Madeirol - conta do Chrome'
-    $f.ClientSize = New-Object System.Drawing.Size(440, 290)
-    $f.StartPosition = 'CenterScreen'; $f.TopMost = $true
-    $f.FormBorderStyle = 'FixedDialog'; $f.MaximizeBox = $false; $f.MinimizeBox = $false
-    $f.Font = New-Object System.Drawing.Font('Segoe UI', 10)
-    $lbl = New-Object System.Windows.Forms.Label
-    $lbl.Text = 'Em qual conta do Chrome o lembrete deve abrir?'
-    $lbl.SetBounds(16, 14, 410, 24)
-    $lista = New-Object System.Windows.Forms.ListBox
-    $lista.SetBounds(16, 44, 408, 186)
-    foreach ($cta in $contas) { [void]$lista.Items.Add($cta.Rotulo) }
-    $lista.SelectedIndex = 0
-    $ok = New-Object System.Windows.Forms.Button
-    $ok.Text = 'OK'; $ok.SetBounds(324, 242, 100, 32); $ok.DialogResult = 'OK'
-    $f.AcceptButton = $ok
-    $lista.Add_DoubleClick({ $f.DialogResult = 'OK'; $f.Close() })
-    $f.Controls.AddRange(@($lbl, $lista, $ok))
-    if ($f.ShowDialog() -ne 'OK') { Write-Host '  Instalacao cancelada.' -ForegroundColor Red; return }
-    $perfil = $contas[$lista.SelectedIndex].Pasta
-    Write-Host ('       Conta: ' + $contas[$lista.SelectedIndex].Rotulo)
-  }
-}
-
-if ($modo -eq 'aba') {
-  $argumentos = "--profile-directory=\`"$perfil\`" --new-tab \`"$url\`""
-} else {
-  $pastaKiosk = Join-Path $env:LOCALAPPDATA 'MadeirolLembrete'
-  $argumentos = "--user-data-dir=\`"$pastaKiosk\`" --kiosk --no-first-run --no-default-browser-check --disable-session-crashed-bubble --autoplay-policy=no-user-gesture-required"
-  if ($exe -like '*msedge.exe') { $argumentos += ' --edge-kiosk-type=fullscreen' }
-  $argumentos += " \`"$url\`""
-}
-$usuario = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-function Esc([string]$s) { [System.Security.SecurityElement]::Escape($s) }
-$xml = @"
-<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <RegistrationInfo><Description>Lembrete interno Madeirol: abre o comunicado em tela cheia.</Description></RegistrationInfo>
-  <Triggers>${gatilhoXml(c)}</Triggers>
-  <Principals><Principal id="Author"><UserId>$(Esc $usuario)</UserId><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <StartWhenAvailable>true</StartWhenAvailable>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <Enabled>true</Enabled>
-  </Settings>
-  <Actions Context="Author"><Exec><Command>$(Esc $exe)</Command><Arguments>$(Esc $argumentos)</Arguments></Exec></Actions>
-</Task>
-"@
-try {
-  Register-ScheduledTask -TaskName $nome -Xml $xml -Force | Out-Null
-} catch {
-  Write-Host ('  Nao foi possivel criar a tarefa: ' + $_.Exception.Message) -ForegroundColor Red
-  return
-}
-$t = Get-ScheduledTask -TaskName $nome | Get-ScheduledTaskInfo
-Write-Host '  Lembrete instalado no Agendador de Tarefas.' -ForegroundColor Green
-if ($t.NextRunTime) { Write-Host ('  Proxima vez: ' + $t.NextRunTime.ToString('dd/MM/yyyy HH:mm')) }
-Write-Host ''
-$r = Read-Host '  Quer ver o lembrete agora para testar? (S/N)'
-if ($r -match '^[sS]') { Start-ScheduledTask -TaskName $nome; Write-Host '  Abrindo... clique em OK, ENTENDI para fechar.' }
-`;
-    return cabecalhoBat('Instalar lembrete Madeirol') + ps.trim() + '\r\n';
-  }
-
-  function gerarDesinstalador() {
-    const ps = `
-$nome = ${psStr(NOME_TAREFA)}
-if (Get-ScheduledTask -TaskName $nome -ErrorAction SilentlyContinue) {
-  Unregister-ScheduledTask -TaskName $nome -Confirm:$false
-  Write-Host '  Lembrete Madeirol removido deste computador.' -ForegroundColor Green
-} else {
-  Write-Host '  Nenhum lembrete Madeirol instalado aqui.'
-}
-`;
-    return cabecalhoBat('Remover lembrete Madeirol') + ps.trim() + '\r\n';
-  }
-
-  function baixar(nome, texto) {
-    const blob = new Blob([texto.replace(/\r?\n/g, '\r\n')], { type: 'application/octet-stream' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = nome;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }
-
-  $('btn-remover').addEventListener('click', () => baixar('remover-lembrete-madeirol.bat', gerarDesinstalador()));
-  $('btn-testar').addEventListener('click', () => {
-    const f = lerForm();
-    mostrar({ titulo: f.titulo, mensagem: f.mensagem, destaque: f.destaque }, false);
+  $('btn-ativar').addEventListener('click', async () => {
+    const b = $('btn-ativar');
+    bip(); // libera o som
+    try { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); } catch(e) {}
+    gravar(K_ATIVO, '');
+    b.disabled = true; b.textContent = 'Testando… aguarde 7 segundos';
+    $('ativo-ajuda').classList.add('oculto');
+    // espera passar o "clique" para testar igual ao horário real (sem clique)
+    setTimeout(() => {
+      let guia = null;
+      try { guia = window.open(location.pathname + '?teste=1', '_blank'); } catch(e) {}
+      setTimeout(() => {
+        b.disabled = false;
+        if (guia && ler(K_ATIVO)) { estadoAtivo(); aviso('Ativado neste computador.'); }
+        else if (guia) { gravar(K_ATIVO, String(Date.now())); estadoAtivo(); aviso('Ativado neste computador.'); }
+        else { estadoAtivo(); $('ativo-ajuda').classList.remove('oculto'); aviso('O Chrome bloqueou a nova guia. Siga os passos abaixo.'); }
+      }, 2500);
+    }, 7000);
   });
 
   /* ---------- aviso rápido ---------- */
@@ -634,8 +534,11 @@ if (Get-ScheduledTask -TaskName $nome -ErrorAction SilentlyContinue) {
     clearTimeout(timerToast); timerToast = setTimeout(() => t.classList.remove('on'), 2800);
   }
 
-  preencher(); mostrarProximo();
-  if (params.has('previa')) mostrar(cfg, false);
+  preencher(); estadoAtivo(); mostrarProximo();
+  if (params.has('previa')) mostrar(cfg, null);
+  verificar();
+  setInterval(verificar, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) verificar(); });
 })();
 </script>
 </body>
