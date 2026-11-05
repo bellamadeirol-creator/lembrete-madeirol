@@ -63,7 +63,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 .ativar h3{margin:6px 0 0;font-size:22px;font-weight:300;letter-spacing:-.02em}
 .selo{flex-shrink:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:8px 14px;border-radius:999px;background:#f3d9d5;color:#a1322a}
 .selo.ok{background:#dcefdf;color:#2f6b3a}
-.passos .btn{display:inline-block;text-decoration:none;margin:2px 0 6px}
 body.modo-teste .topo,body.modo-teste .painel{display:none}
 .teste-ok{min-height:100svh;display:grid;place-items:center;text-align:center;padding:24px;font-size:22px}
 body.modo-alerta .topo,body.modo-alerta .painel{display:none}
@@ -181,28 +180,18 @@ h1 strong{font-weight:750;color:#4A2818}
     <div class="ativar-topo">
       <div>
         <span class="rotulo">Neste computador</span>
-        <h3 id="ext-titulo">Extensão não instalada</h3>
+        <h3 id="ativo-titulo">Lembrete ainda não ativado</h3>
       </div>
-      <span class="selo" id="ext-selo">Desativado</span>
+      <span class="selo" id="ativo-selo">Desativado</span>
     </div>
-
-    <div id="ext-ok" class="oculto">
-      <p class="aviso">A extensão <b>Madeirol Lembretes</b> está instalada neste Chrome. No horário, ela abre o comunicado em tela cheia sozinha, <b>mesmo com este site fechado</b>. Não precisa deixar nenhuma guia aberta.</p>
-      <div class="proximo" id="ext-proximo" style="margin-top:14px"></div>
-      <div class="acoes" style="margin-top:16px"><button type="button" class="btn" id="btn-ext-testar">Testar agora</button></div>
-    </div>
-
-    <div id="ext-instalar">
-      <p class="aviso">Para o lembrete abrir sozinho sem depender de guia aberta, instale a extensão no Chrome. É uma vez só por computador e leva 1 minuto.</p>
-      <ol class="passos">
-        <li><a class="btn" id="btn-baixar-ext" href="extensao-madeirol.zip" download>Baixar extensão</a></li>
-        <li>Abra a pasta Downloads, clique com o botão direito em <b>extensao-madeirol.zip</b> → <b>Extrair tudo</b>. Guarde a pasta em <b>Documentos</b> e não apague.</li>
-        <li>No Chrome, abra o endereço <b>chrome://extensions</b> <button type="button" class="limpar" id="btn-copiar">copiar endereço</button></li>
-        <li>Ligue o <b>Modo do desenvolvedor</b> (canto superior direito).</li>
-        <li>Clique em <b>Carregar sem compactação</b> e escolha a pasta <b>extensao-madeirol</b> que você extraiu.</li>
-        <li>Volte nesta página e aperte <b>F5</b>. O selo vai ficar verde.</li>
-      </ol>
-    </div>
+    <p class="aviso" id="ativo-texto">Clique no botão abaixo uma vez. No horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.</p>
+    <div class="acoes"><button type="button" class="btn" id="btn-ativar">Ativar neste computador</button></div>
+    <ol class="passos oculto" id="ativo-ajuda">
+      <li>Olhe no canto direito da barra de endereço do Chrome: apareceu um ícone de <b>janela bloqueada</b>.</li>
+      <li>Clique nele, marque <b>Sempre permitir pop-ups e redirecionamentos</b> e clique em <b>Concluído</b>.</li>
+      <li>Clique de novo em <b>Ativar neste computador</b>.</li>
+    </ol>
+    <p class="aviso"><b>Importante:</b> deixe esta página aberta numa guia do Chrome (clique com o botão direito na guia → <b>Fixar</b>). Pode trabalhar normalmente em outras guias e programas. Se o computador estava desligado no horário, o lembrete abre assim que esta página for aberta no mesmo dia.</p>
   </section>
 </div>
 
@@ -243,23 +232,6 @@ h1 strong{font-weight:750;color:#4A2818}
   const K_CFG = 'madeirol_lembrete_cfg', K_ACK = 'madeirol_lembrete_ack', K_FIRED = 'madeirol_lembrete_disparo',
         K_SNOOZE = 'madeirol_lembrete_snooze', K_VIVO = 'madeirol_lembrete_vivo', K_ATIVO = 'madeirol_lembrete_ativo';
   const ULTIMO = 32; // "último dia do mês"
-
-  /* ---------- conversa com a extensão (se instalada) ---------- */
-  const temExt = document.documentElement.dataset.madeirolExt === '1';
-  let seqExt = 0;
-  function ext(msg) {
-    return new Promise(res => {
-      if (!temExt) return res(null);
-      const id = ++seqExt;
-      const ouvir = e => {
-        if (e.source !== window || !e.data || e.data.origem !== 'madeirol-ext' || e.data.id !== id) return;
-        window.removeEventListener('message', ouvir); res(e.data.resp);
-      };
-      window.addEventListener('message', ouvir);
-      window.postMessage({ origem: 'madeirol-site', id, msg }, '*');
-      setTimeout(() => { window.removeEventListener('message', ouvir); res(null); }, 4000);
-    });
-  }
 
   const PADRAO = {
     tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00',
@@ -363,17 +335,16 @@ h1 strong{font-weight:750;color:#4A2818}
   }
   tela.addEventListener('pointerdown', e => { if (!e.target.closest('button')) telaCheia(); });
 
-  async function confirmar(adiar) {
-    const chave = chaveAtual, eraGuia = params.has('alerta');
-    if (chave && /^\d+$/.test(chave)) gravar(K_ACK, chave); // teste/adiado não mexem na confirmação real
-    if (adiar && !temExt) gravar(K_SNOOZE, String(Date.now() + 10 * 60 * 1000));
+  function confirmar(adiar) {
+    if (chaveAtual) gravar(K_ACK, chaveAtual);
+    if (adiar) gravar(K_SNOOZE, String(Date.now() + 10 * 60 * 1000));
     gravar(K_VIVO, '');
+    const eraGuia = params.has('alerta');
     chaveAtual = null; esconder();
-    if (!eraGuia) { if (adiar) aviso('Vou lembrar de novo em 10 minutos.'); return; }
-    // aberto pela extensão: ela registra a confirmação e fecha a janela
-    const r = temExt ? await ext({ tipo: 'ack', chave, adiar }) : null;
-    if (!r) window.close(); // aberto pelo site: fecha sozinho
-    setTimeout(() => { document.body.innerHTML = '<div class="teste-ok">Tudo certo. Pode fechar esta guia.</div>'; }, 600);
+    if (eraGuia) {
+      window.close(); // guia aberta pelo próprio site: fecha sozinha
+      setTimeout(() => { document.body.innerHTML = '<div class="teste-ok">Tudo certo. Pode fechar esta guia.</div>'; }, 300);
+    } else if (adiar) aviso('Vou lembrar de novo em 10 minutos.');
   }
   $('btn-ok').addEventListener('click', () => confirmar(false));
   $('btn-adiar').addEventListener('click', () => confirmar(true));
@@ -381,10 +352,7 @@ h1 strong{font-weight:750;color:#4A2818}
   /* ================= GUIA DO ALERTA ================= */
   if (params.has('alerta')) {
     document.body.classList.add('modo-alerta');
-    const dados = params.has('m')
-      ? { titulo: params.get('t') || cfg.titulo, mensagem: params.get('m') || cfg.mensagem, destaque: params.get('d') || '' }
-      : cfg;
-    mostrar(dados, params.get('k') || 'alerta');
+    mostrar(cfg, params.get('k') || 'alerta');
     return;
   }
 
@@ -456,8 +424,7 @@ h1 strong{font-weight:750;color:#4A2818}
     const u = ultima(new Date()); gravar(K_ACK, u ? String(u.getTime()) : ''); // não dispara por horário que já passou
     gravar(K_SNOOZE, '');
     preencher(); mostrarProximo();
-    if (temExt) ext({ tipo: 'cfg', cfg, novo: true }).then(r => { atualizarExt(r); aviso(r ? 'Lembrete salvo e agendado na extensão.' : 'Salvo, mas a extensão não respondeu. Aperte F5.'); });
-    else aviso('Lembrete salvo. Instale a extensão abaixo para ele abrir sozinho.');
+    aviso('Lembrete salvo.');
   });
 
   $('btn-testar').addEventListener('click', () => mostrar(lerForm(), null));
@@ -509,8 +476,6 @@ h1 strong{font-weight:750;color:#4A2818}
 
   const UM_DIA = 864e5, DEZ_MIN = 6e5;
   function verificar() {
-    mostrarProximo();
-    if (temExt) return; // com a extensão, quem dispara é ela
     if (tela.classList.contains('ativo')) return;
     const agora = Date.now();
     const alertaAberto = agora - Number(ler(K_VIVO) || 0) < 15000; // outra guia já está mostrando
@@ -531,27 +496,35 @@ h1 strong{font-weight:750;color:#4A2818}
     mostrarProximo();
   }
 
-  /* ---------- status da extensão ---------- */
-  function atualizarExt(r) {
-    $('ext-ok').classList.toggle('oculto', !temExt);
-    $('ext-instalar').classList.toggle('oculto', temExt);
-    $('ext-selo').textContent = temExt ? 'Ativo' : 'Desativado';
-    $('ext-selo').classList.toggle('ok', temExt);
-    $('ext-titulo').textContent = temExt ? 'Lembrete ativo neste computador' : 'Extensão não instalada';
-    if (temExt) {
-      const p = r && r.proxima ? new Date(r.proxima) : null;
-      $('ext-proximo').innerHTML = p
-        ? 'Agendado na extensão: <b>' + p.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b>'
-        : (r ? 'Nenhum horário futuro agendado.' : 'Clique em <b>Salvar</b> para enviar o lembrete para a extensão.');
-    }
+  /* ---------- ativação neste computador ---------- */
+  function estadoAtivo() {
+    const ok = !!ler(K_ATIVO);
+    $('ativo-selo').textContent = ok ? 'Ativo' : 'Desativado';
+    $('ativo-selo').classList.toggle('ok', ok);
+    $('ativo-titulo').textContent = ok ? 'Lembrete ativo neste computador' : 'Lembrete ainda não ativado';
+    $('ativo-texto').textContent = ok
+      ? 'Tudo certo: no horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.'
+      : 'Clique no botão abaixo uma vez. No horário marcado, o site abre sozinho uma nova guia no seu Chrome com o comunicado.';
+    $('btn-ativar').textContent = ok ? 'Testar de novo' : 'Ativar neste computador';
   }
-  $('btn-ext-testar').addEventListener('click', async () => {
-    const r = await ext({ tipo: 'testar' });
-    if (!r) aviso('A extensão não respondeu. Aperte F5 e tente de novo.');
-  });
-  $('btn-copiar').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText('chrome://extensions'); aviso('Endereço copiado. Cole na barra do Chrome.'); }
-    catch(e) { aviso('Digite chrome://extensions na barra do Chrome.'); }
+  $('btn-ativar').addEventListener('click', async () => {
+    const b = $('btn-ativar');
+    bip(); // libera o som
+    try { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); } catch(e) {}
+    gravar(K_ATIVO, '');
+    b.disabled = true; b.textContent = 'Testando… aguarde 7 segundos';
+    $('ativo-ajuda').classList.add('oculto');
+    // espera passar o "clique" para testar igual ao horário real (sem clique)
+    setTimeout(() => {
+      let guia = null;
+      try { guia = window.open(location.pathname + '?teste=1', '_blank'); } catch(e) {}
+      setTimeout(() => {
+        b.disabled = false;
+        if (guia && ler(K_ATIVO)) { estadoAtivo(); aviso('Ativado neste computador.'); }
+        else if (guia) { gravar(K_ATIVO, String(Date.now())); estadoAtivo(); aviso('Ativado neste computador.'); }
+        else { estadoAtivo(); $('ativo-ajuda').classList.remove('oculto'); aviso('O Chrome bloqueou a nova guia. Siga os passos abaixo.'); }
+      }, 2500);
+    }, 7000);
   });
 
   /* ---------- aviso rápido ---------- */
@@ -561,12 +534,7 @@ h1 strong{font-weight:750;color:#4A2818}
     clearTimeout(timerToast); timerToast = setTimeout(() => t.classList.remove('on'), 2800);
   }
 
-  preencher(); mostrarProximo(); atualizarExt(null);
-  if (temExt) {
-    // mantém a extensão sempre com a configuração salva neste navegador
-    if (ler(K_CFG)) ext({ tipo: 'cfg', cfg, novo: false }).then(atualizarExt);
-    else ext({ tipo: 'status' }).then(atualizarExt);
-  }
+  preencher(); estadoAtivo(); mostrarProximo();
   if (params.has('previa')) mostrar(cfg, null);
   verificar();
   setInterval(verificar, 15000);
