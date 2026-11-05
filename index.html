@@ -161,6 +161,14 @@ h1 strong{font-weight:750;color:#4A2818}
       <input type="text" id="destaque" maxlength="220">
     </div>
 
+    <div class="campo">
+      <label for="modo">Como o lembrete abre no computador</label>
+      <select id="modo">
+        <option value="aba">Nova guia no Chrome, na conta que a pessoa usa</option>
+        <option value="tela">Janela do Chrome em tela cheia, por cima de tudo</option>
+      </select>
+    </div>
+
     <div class="proximo" id="proximo"></div>
 
     <div class="acoes">
@@ -170,8 +178,10 @@ h1 strong{font-weight:750;color:#4A2818}
     </div>
     <ol class="passos">
       <li>Clique em <b>Salvar e baixar instalador</b>. Vai baixar o arquivo <b>instalar-lembrete-madeirol.bat</b>.</li>
-      <li>No computador da pessoa, dê dois cliques nesse arquivo. Se o Windows avisar, clique em <b>Mais informações → Executar assim mesmo</b>.</li>
-      <li>Pronto: o lembrete fica no <b>Agendador de Tarefas do Windows</b>. No horário, abre uma janela do Chrome em tela cheia por cima de tudo, sem fechar nada do que estiver aberto. Ela só some quando a pessoa clicar em <b>Ok, entendi</b>.</li>
+      <li>No computador da pessoa, dê dois cliques nele. Se o Windows avisar, clique em <b>Mais informações → Executar assim mesmo</b>.</li>
+      <li>Vai abrir o explorador de arquivos: selecione o <b>chrome.exe</b> (normalmente já aparece selecionado, é só clicar em Abrir).</li>
+      <li>Depois, escolha em qual <b>conta do Chrome</b> o lembrete deve abrir.</li>
+      <li>Pronto: no horário, o Windows abre sozinho uma <b>nova guia</b> com o comunicado, sem fechar nada do que estiver aberto.</li>
     </ol>
     <p class="aviso">Não precisa deixar esta página aberta. Se o computador estiver desligado no horário, o lembrete aparece assim que a pessoa ligar e entrar no Windows. Mudou dia, horário ou mensagem? Baixe e rode o instalador de novo: ele substitui o anterior.</p>
   </form>
@@ -322,7 +332,7 @@ h1 strong{font-weight:750;color:#4A2818}
   const ULTIMO = 32; // "último dia do mês"
 
   const PADRAO = {
-    tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00',
+    tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00', modo: 'aba',
     titulo: 'Lembrete mensal',
     mensagem: 'Não se esqueça de enviar seu relatório mensal para o Gilmar.',
     destaque: 'relatório mensal para o Gilmar.'
@@ -351,6 +361,7 @@ h1 strong{font-weight:750;color:#4A2818}
   function preencher() {
     $('tipo').value = cfg.tipo; $('data').value = cfg.data; $('hora').value = cfg.hora;
     $('titulo').value = cfg.titulo; $('mensagem').value = cfg.mensagem; $('destaque').value = cfg.destaque;
+    $('modo').value = cfg.modo;
     document.querySelectorAll('#mes input').forEach(c => c.checked = cfg.diasMes.includes(+c.value));
     document.querySelectorAll('#dias input').forEach(c => c.checked = cfg.dias.includes(+c.value));
     alternarCampos();
@@ -379,7 +390,8 @@ h1 strong{font-weight:750;color:#4A2818}
       hora: $('hora').value || '09:00',
       titulo: $('titulo').value.trim() || PADRAO.titulo,
       mensagem: $('mensagem').value.trim() || PADRAO.mensagem,
-      destaque: $('destaque').value.trim()
+      destaque: $('destaque').value.trim(),
+      modo: $('modo').value
     };
   }
 
@@ -459,7 +471,7 @@ h1 strong{font-weight:750;color:#4A2818}
     return [
       '@echo off',
       `title ${titulo}`,
-      'powershell -NoProfile -ExecutionPolicy Bypass -Command "$c = Get-Content -LiteralPath \'%~f0\' -Raw -Encoding UTF8; iex (($c -split \'(?m)^#PS#\\r?\\n\', 2)[1])"',
+      'powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "$c = Get-Content -LiteralPath \'%~f0\' -Raw -Encoding UTF8; iex (($c -split \'(?m)^#PS#\\r?\\n\', 2)[1])"',
       'echo.',
       'pause',
       'goto :eof',
@@ -484,12 +496,75 @@ $cands = @(
   "\${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe",
   "$env:ProgramFiles\\Microsoft\\Edge\\Application\\msedge.exe"
 )
-$exe = $cands | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-if (-not $exe) { Write-Host '  Chrome nao encontrado neste computador.' -ForegroundColor Red; return }
-$perfil = Join-Path $env:LOCALAPPDATA 'MadeirolLembrete'
-$argumentos = "--user-data-dir=\`"$perfil\`" --kiosk --no-first-run --no-default-browser-check --disable-session-crashed-bubble --autoplay-policy=no-user-gesture-required"
-if ($exe -like '*msedge.exe') { $argumentos += ' --edge-kiosk-type=fullscreen' }
-$argumentos += " \`"$url\`""
+Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+$detectado = $cands | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+
+# 1) escolher o chrome.exe pelo explorador de arquivos
+$dlg = New-Object System.Windows.Forms.OpenFileDialog
+$dlg.Title = 'Madeirol: selecione o chrome.exe deste computador'
+$dlg.Filter = 'Navegador (chrome.exe, msedge.exe)|chrome.exe;msedge.exe|Programas (*.exe)|*.exe'
+if ($detectado) { $dlg.InitialDirectory = Split-Path $detectado; $dlg.FileName = Split-Path $detectado -Leaf }
+else { $dlg.InitialDirectory = $env:ProgramFiles }
+$dono = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true }
+Write-Host '  1/2  Selecione o chrome.exe na janela que abriu...'
+if ($dlg.ShowDialog($dono) -ne 'OK') { Write-Host '  Instalacao cancelada.' -ForegroundColor Red; return }
+$exe = $dlg.FileName
+Write-Host ('       Navegador: ' + $exe)
+
+# 2) escolher a conta (perfil) do Chrome
+$modo = ${psStr(c.modo)}
+$perfil = 'Default'
+if ($modo -eq 'aba') {
+  $dadosUsuario = if ($exe -like '*msedge.exe') { Join-Path $env:LOCALAPPDATA 'Microsoft\\Edge\\User Data' } else { Join-Path $env:LOCALAPPDATA 'Google\\Chrome\\User Data' }
+  $contas = @()
+  try {
+    $estado = Get-Content -LiteralPath (Join-Path $dadosUsuario 'Local State') -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($item in $estado.profile.info_cache.PSObject.Properties) {
+      $rotulo = $item.Value.name
+      if ($item.Value.user_name) { $rotulo += '   (' + $item.Value.user_name + ')' }
+      $contas += [pscustomobject]@{ Pasta = $item.Name; Rotulo = $rotulo }
+    }
+  } catch {
+    Get-ChildItem -LiteralPath $dadosUsuario -Directory -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -eq 'Default' -or $_.Name -like 'Profile *' } |
+      ForEach-Object { $contas += [pscustomobject]@{ Pasta = $_.Name; Rotulo = $_.Name } }
+  }
+  if ($contas.Count -eq 1) { $perfil = $contas[0].Pasta }
+  elseif ($contas.Count -gt 1) {
+    Write-Host '  2/2  Escolha a conta do Chrome na janela que abriu...'
+    $f = New-Object System.Windows.Forms.Form
+    $f.Text = 'Madeirol - conta do Chrome'
+    $f.ClientSize = New-Object System.Drawing.Size(440, 290)
+    $f.StartPosition = 'CenterScreen'; $f.TopMost = $true
+    $f.FormBorderStyle = 'FixedDialog'; $f.MaximizeBox = $false; $f.MinimizeBox = $false
+    $f.Font = New-Object System.Drawing.Font('Segoe UI', 10)
+    $lbl = New-Object System.Windows.Forms.Label
+    $lbl.Text = 'Em qual conta do Chrome o lembrete deve abrir?'
+    $lbl.SetBounds(16, 14, 410, 24)
+    $lista = New-Object System.Windows.Forms.ListBox
+    $lista.SetBounds(16, 44, 408, 186)
+    foreach ($cta in $contas) { [void]$lista.Items.Add($cta.Rotulo) }
+    $lista.SelectedIndex = 0
+    $ok = New-Object System.Windows.Forms.Button
+    $ok.Text = 'OK'; $ok.SetBounds(324, 242, 100, 32); $ok.DialogResult = 'OK'
+    $f.AcceptButton = $ok
+    $lista.Add_DoubleClick({ $f.DialogResult = 'OK'; $f.Close() })
+    $f.Controls.AddRange(@($lbl, $lista, $ok))
+    if ($f.ShowDialog() -ne 'OK') { Write-Host '  Instalacao cancelada.' -ForegroundColor Red; return }
+    $perfil = $contas[$lista.SelectedIndex].Pasta
+    Write-Host ('       Conta: ' + $contas[$lista.SelectedIndex].Rotulo)
+  }
+}
+
+if ($modo -eq 'aba') {
+  $argumentos = "--profile-directory=\`"$perfil\`" --new-tab \`"$url\`""
+} else {
+  $pastaKiosk = Join-Path $env:LOCALAPPDATA 'MadeirolLembrete'
+  $argumentos = "--user-data-dir=\`"$pastaKiosk\`" --kiosk --no-first-run --no-default-browser-check --disable-session-crashed-bubble --autoplay-policy=no-user-gesture-required"
+  if ($exe -like '*msedge.exe') { $argumentos += ' --edge-kiosk-type=fullscreen' }
+  $argumentos += " \`"$url\`""
+}
 $usuario = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 function Esc([string]$s) { [System.Security.SecurityElement]::Escape($s) }
 $xml = @"
