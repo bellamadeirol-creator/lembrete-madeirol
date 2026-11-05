@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Madeirol | Lembretes</title>
 <style>
-:root { --cocoa:#4A2818; --coffee:#4A2818; --stone:#eee8e1; --milk:#f9f6f1; --taupe:#9B6A4E; --line:#D9BBA8; }
+:root { --cocoa:#4A2818; --milk:#f9f6f1; --sand:#F1E2D6; --line:#D9BBA8; --brown:#8C5537; --muted:#70432B; --r:12px; }
 *{box-sizing:border-box}
 html,body{margin:0;min-width:320px;min-height:100%;font-family:Arial,'Segoe UI',sans-serif}
 body{background:var(--milk);color:var(--cocoa)}
@@ -19,36 +19,51 @@ body{background:var(--milk);color:var(--cocoa)}
 .painel h2{font-size:clamp(26px,3.4vw,38px);font-weight:300;letter-spacing:-.03em;margin:0 0 6px}
 .painel h2 strong{font-weight:750}
 .sub{color:#70432B;font-size:14px;margin:0 0 28px;line-height:1.5}
-.cartao{background:#fff;border:1px solid var(--line);padding:clamp(20px,4vw,36px);display:grid;gap:20px}
+.cartao{background:#fff;border:1px solid #EAD9CC;border-radius:20px;padding:clamp(20px,4vw,36px);display:grid;gap:22px;box-shadow:0 20px 50px -30px rgba(74,40,24,.35)}
 .campo{display:grid;gap:8px}
 .campo>label,.rotulo{font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:#70432B}
-input[type=text],input[type=time],input[type=date],input[type=number],select,textarea{width:100%;font:inherit;font-size:16px;color:var(--cocoa);background:var(--milk);border:1px solid var(--line);padding:12px 14px;border-radius:0;outline:none}
+input[type=text],input[type=time],input[type=date],select,textarea{width:100%;font:inherit;font-size:16px;color:var(--cocoa);background:var(--milk);border:1px solid var(--line);padding:12px 16px;border-radius:var(--r);outline:none;transition:border-color .2s,box-shadow .2s}
+select{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%234A2818' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center}
 textarea{resize:vertical;min-height:84px;line-height:1.4}
-input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0 0 3px #F1E2D6}
+input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0 0 4px var(--sand)}
 .linha2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.dias{display:flex;flex-wrap:wrap;gap:8px}
-.dias label{cursor:pointer}
-.dias input{position:absolute;opacity:0;pointer-events:none}
-.dias span{display:inline-block;padding:10px 14px;border:1px solid var(--line);font-size:13px;font-weight:700;background:var(--milk);user-select:none}
-.dias input:checked+span{background:var(--cocoa);color:#fff;border-color:var(--cocoa)}
-.dias input:focus-visible+span{box-shadow:0 0 0 3px #F1E2D6}
 .oculto{display:none!important}
-.proximo{border-left:4px solid #8C5537;background:#F7EEE6;padding:14px 16px;font-size:15px;line-height:1.5}
+
+/* dias do mês e da semana */
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips label{cursor:pointer}
+.chips span{display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--milk);font-size:14px;font-weight:700;user-select:none;transition:background .15s,color .15s,border-color .15s}
+.chips label:hover span{border-color:var(--brown)}
+.chips input:checked+span{background:var(--cocoa);color:#fff;border-color:var(--cocoa)}
+.chips input:focus-visible+span{box-shadow:0 0 0 4px var(--sand)}
+.mes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.mes span{height:44px;border-radius:10px}
+.mes .ultimo{grid-column:span 4}
+.mes .ultimo span{font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.semana{display:flex;flex-wrap:wrap;gap:8px}
+.semana span{padding:10px 16px;border-radius:999px;font-size:13px}
+.dica{font-size:13px;color:#70432B;line-height:1.5;margin:4px 0 0}
+.dica b{color:var(--cocoa)}
+.limpar{background:none;border:0;padding:0;margin-left:4px;font:inherit;font-size:13px;color:var(--brown);text-decoration:underline;cursor:pointer}
+
+.proximo{border-left:4px solid #8C5537;background:#F7EEE6;padding:14px 18px;font-size:15px;line-height:1.5;border-radius:0 var(--r) var(--r) 0}
 .proximo b{font-weight:750}
 .acoes{display:flex;flex-wrap:wrap;gap:10px}
-.btn{font:inherit;font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:14px 20px;border:1px solid var(--cocoa);background:var(--cocoa);color:#fff;cursor:pointer}
+.btn{font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:14px 24px;border:1px solid var(--cocoa);background:var(--cocoa);color:#fff;cursor:pointer;border-radius:999px;transition:background .2s,transform .1s}
 .btn:hover{background:#5d3421}
+.btn:active{transform:scale(.98)}
 .btn.sec{background:transparent;color:var(--cocoa)}
-.btn.sec:hover{background:#F1E2D6}
+.btn.sec:hover{background:var(--sand)}
+.btn:disabled{cursor:default;opacity:.7}
 .aviso{font-size:13px;color:#70432B;line-height:1.55;margin:0}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--cocoa);color:#fff;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:50}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--cocoa);color:#fff;padding:12px 22px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:50;border-radius:999px}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:560px){.linha2{grid-template-columns:1fr}.btn{flex:1 1 100%}}
+@media(max-width:560px){.linha2{grid-template-columns:1fr}.cartao .btn{flex:1 1 100%}.mes span{height:40px}}
 
 /* ============ TELA DO LEMBRETE (layout original) ============ */
 #tela-lembrete{position:fixed;inset:0;z-index:1000;overflow:auto;background:var(--milk);display:none}
-#tela-lembrete.ativo{display:block;animation:entrar .5s ease-out}
-@keyframes entrar{from{opacity:0}to{opacity:1}}
+#tela-lembrete.ativo{display:block;animation:entrar .45s ease-out}
+@keyframes entrar{from{opacity:0;transform:scale(1.02)}to{opacity:1;transform:none}}
 .comunicado{min-height:100svh;display:grid;grid-template-columns:minmax(240px,34%) 1fr;overflow:hidden}
 .esquerda{background:var(--cocoa);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(35px,5vw,90px);position:relative}
 .esquerda:after{content:"";position:absolute;right:0;top:0;height:100%;width:1px;background:rgba(255,255,255,.10)}
@@ -65,7 +80,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 h1{font-size:clamp(38px,4.4vw,88px);font-weight:300;line-height:1.19;letter-spacing:-.048em;margin:0;max-width:1050px}
 h1 strong{font-weight:750;color:#4A2818}
 .rodape{border-top:1px solid #D9BBA8;padding-top:22px;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#70432B}
-.rodape .acoes{gap:10px}
+.rodape .btn{font-size:13px;padding:16px 28px}
 
 @keyframes piscar{0%,100%{opacity:1;box-shadow:0 0 0 6px #f0d8d5}50%{opacity:.25;box-shadow:0 0 0 18px #de8e8860}}
 @keyframes linha{0%,100%{opacity:1}50%{opacity:.4}}
@@ -95,24 +110,31 @@ h1 strong{font-weight:750;color:#4A2818}
 
 <div class="painel">
   <h2>Configurar <strong>lembrete</strong></h2>
-  <p class="sub">Escolha quando o lembrete deve aparecer. No horário marcado, a tela do comunicado abre automaticamente nesta aba.</p>
+  <p class="sub">Escolha quando o lembrete deve aparecer. No horário marcado, o comunicado toma a tela inteira e só sai quando a pessoa confirmar.</p>
 
   <form class="cartao" id="form" autocomplete="off">
     <div class="campo">
       <label for="tipo">Repetição</label>
       <select id="tipo">
-        <option value="mensal">Todo mês (dia fixo)</option>
-        <option value="semanal">Toda semana (dias escolhidos)</option>
+        <option value="mensal">Todo mês (escolha os dias)</option>
+        <option value="semanal">Toda semana (escolha os dias)</option>
         <option value="diario">Todos os dias</option>
         <option value="unico">Uma única vez (data específica)</option>
       </select>
     </div>
 
+    <div class="campo" id="campo-mes">
+      <span class="rotulo">Dias do mês</span>
+      <div class="chips mes" id="mes"></div>
+      <p class="dica" id="dica-mes"></p>
+    </div>
+
+    <div class="campo oculto" id="campo-semana">
+      <span class="rotulo">Dias da semana</span>
+      <div class="chips semana" id="dias"></div>
+    </div>
+
     <div class="linha2">
-      <div class="campo" id="campo-dia">
-        <label for="dia">Dia do mês</label>
-        <input type="number" id="dia" min="1" max="31" inputmode="numeric">
-      </div>
       <div class="campo oculto" id="campo-data">
         <label for="data">Data</label>
         <input type="date" id="data">
@@ -121,11 +143,6 @@ h1 strong{font-weight:750;color:#4A2818}
         <label for="hora">Horário</label>
         <input type="time" id="hora" required>
       </div>
-    </div>
-
-    <div class="campo oculto" id="campo-semana">
-      <span class="rotulo">Dias da semana</span>
-      <div class="dias" id="dias"></div>
     </div>
 
     <div class="campo">
@@ -148,14 +165,14 @@ h1 strong{font-weight:750;color:#4A2818}
       <button type="button" class="btn sec" id="btn-testar">Ver prévia</button>
       <button type="button" class="btn sec" id="btn-notif">Ativar notificações</button>
     </div>
-    <p class="aviso">Deixe esta página aberta numa aba do navegador (pode ficar minimizada). Com as notificações ativas, um aviso do sistema aparece mesmo com outra janela na frente; ao clicar nele, o comunicado abre em tela cheia. Se o computador estava desligado no horário, o lembrete aparece quando a página for aberta no mesmo dia.</p>
+    <p class="aviso">Deixe esta página aberta numa aba do navegador (pode ficar minimizada). Com as notificações ativas, um aviso do sistema aparece por cima de qualquer programa e, ao clicar nele, o comunicado abre em tela cheia. Enquanto ninguém confirmar, o aviso toca e reaparece a cada 30 segundos. Se o computador estava desligado no horário, o lembrete aparece quando a página for aberta no mesmo dia.</p>
   </form>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <!-- ============ TELA DO LEMBRETE ============ -->
-<div id="tela-lembrete" role="dialog" aria-modal="true" aria-labelledby="mensagem">
+<div id="tela-lembrete" role="alertdialog" aria-modal="true" aria-labelledby="mensagem-h1">
 <main class="comunicado">
   <aside class="esquerda">
     <img class="logotipo" src="data:image/png;base64,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" alt="Madeirol">
@@ -182,61 +199,78 @@ h1 strong{font-weight:750;color:#4A2818}
 
 <script>
 (() => {
-  /* ---------- armazenamento seguro ---------- */
+  /* ---------- armazenamento ---------- */
   const K_CFG = 'madeirol_lembrete_cfg', K_ACK = 'madeirol_lembrete_ack', K_SNOOZE = 'madeirol_lembrete_snooze';
   const ler = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
   const gravar = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
+  const ULTIMO = 32; // "último dia do mês"
 
   const PADRAO = {
-    tipo: 'mensal', dia: 1, dias: [1], data: '', hora: '09:00',
+    tipo: 'mensal', diasMes: [1], dias: [1], data: '', hora: '09:00',
     titulo: 'Lembrete mensal',
     mensagem: 'Não se esqueça de enviar seu relatório mensal para o Gilmar.',
     destaque: 'relatório mensal para o Gilmar.'
   };
   let cfg = { ...PADRAO };
-  try { const s = JSON.parse(ler(K_CFG) || 'null'); if (s) cfg = { ...PADRAO, ...s }; } catch(e) {}
+  try {
+    const s = JSON.parse(ler(K_CFG) || 'null');
+    if (s) { cfg = { ...PADRAO, ...s }; if (!Array.isArray(s.diasMes) && s.dia) cfg.diasMes = [s.dia]; } // versão anterior tinha só "dia"
+  } catch(e) {}
 
   const $ = id => document.getElementById(id);
   const SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const SEMANA_LONGA = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  const lista = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
+  const nomeDia = n => n === ULTIMO ? 'último dia' : String(n);
 
   /* ---------- formulário ---------- */
-  $('dias').innerHTML = SEMANA.map((d, i) =>
-    `<label><input type="checkbox" value="${i}"><span>${d}</span></label>`).join('');
+  let h = '';
+  for (let d = 1; d <= 31; d++) h += `<label><input type="checkbox" value="${d}"><span>${d}</span></label>`;
+  h += `<label class="ultimo"><input type="checkbox" value="${ULTIMO}"><span>Último dia</span></label>`;
+  $('mes').innerHTML = h;
+  $('dias').innerHTML = SEMANA.map((d, i) => `<label><input type="checkbox" value="${i}"><span>${d}</span></label>`).join('');
+  const marcados = sel => [...document.querySelectorAll(sel + ' input:checked')].map(c => +c.value).sort((a, b) => a - b);
 
   function preencher() {
-    $('tipo').value = cfg.tipo; $('dia').value = cfg.dia; $('data').value = cfg.data;
-    $('hora').value = cfg.hora; $('titulo').value = cfg.titulo;
-    $('mensagem').value = cfg.mensagem; $('destaque').value = cfg.destaque;
+    $('tipo').value = cfg.tipo; $('data').value = cfg.data; $('hora').value = cfg.hora;
+    $('titulo').value = cfg.titulo; $('mensagem').value = cfg.mensagem; $('destaque').value = cfg.destaque;
+    document.querySelectorAll('#mes input').forEach(c => c.checked = cfg.diasMes.includes(+c.value));
     document.querySelectorAll('#dias input').forEach(c => c.checked = cfg.dias.includes(+c.value));
     alternarCampos();
   }
   function alternarCampos() {
     const t = $('tipo').value;
-    $('campo-dia').classList.toggle('oculto', t !== 'mensal');
+    $('campo-mes').classList.toggle('oculto', t !== 'mensal');
     $('campo-data').classList.toggle('oculto', t !== 'unico');
     $('campo-semana').classList.toggle('oculto', t !== 'semanal');
+    const dm = marcados('#mes');
+    $('dica-mes').innerHTML = dm.length
+      ? `Selecionados: <b>${lista(dm.map(nomeDia))}</b>. Em meses mais curtos, dias como 30 e 31 caem no último dia. <button type="button" class="limpar" id="limpar">Limpar</button>`
+      : 'Clique nos dias em que o lembrete deve aparecer. Pode marcar mais de um.';
+    const lp = $('limpar');
+    if (lp) lp.onclick = () => { document.querySelectorAll('#mes input').forEach(c => c.checked = false); alternarCampos(); };
   }
   $('tipo').addEventListener('change', alternarCampos);
+  $('mes').addEventListener('change', alternarCampos);
 
   $('form').addEventListener('submit', e => {
     e.preventDefault();
     const novo = {
       tipo: $('tipo').value,
-      dia: Math.min(31, Math.max(1, parseInt($('dia').value, 10) || 1)),
-      dias: [...document.querySelectorAll('#dias input:checked')].map(c => +c.value),
+      diasMes: marcados('#mes'),
+      dias: marcados('#dias'),
       data: $('data').value,
       hora: $('hora').value || '09:00',
       titulo: $('titulo').value.trim() || PADRAO.titulo,
       mensagem: $('mensagem').value.trim() || PADRAO.mensagem,
       destaque: $('destaque').value.trim()
     };
+    if (novo.tipo === 'mensal' && !novo.diasMes.length) return aviso('Escolha pelo menos um dia do mês.');
     if (novo.tipo === 'semanal' && !novo.dias.length) return aviso('Escolha pelo menos um dia da semana.');
     if (novo.tipo === 'unico' && !novo.data) return aviso('Escolha a data.');
     cfg = novo;
     gravar(K_CFG, JSON.stringify(cfg));
-    // não dispara na hora por um horário que já passou antes de salvar
-    const u = ultima(new Date()); gravar(K_ACK, u ? String(u.getTime()) : '');
+    const u = ultima(new Date()); gravar(K_ACK, u ? String(u.getTime()) : ''); // não dispara por horário que já passou
     gravar(K_SNOOZE, '');
     preencher(); mostrarProximo();
     aviso('Lembrete salvo.');
@@ -244,44 +278,33 @@ h1 strong{font-weight:750;color:#4A2818}
 
   /* ---------- cálculo de datas ---------- */
   const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  function noHorario(d) {
-    const [h, m] = cfg.hora.split(':').map(Number);
-    const c = new Date(d); c.setHours(h, m, 0, 0); return c;
-  }
+  function noHorario(d) { const [hh, mm] = cfg.hora.split(':').map(Number); const c = new Date(d); c.setHours(hh, mm, 0, 0); return c; }
   function casa(d) {
     switch (cfg.tipo) {
       case 'diario': return true;
       case 'semanal': return cfg.dias.includes(d.getDay());
       case 'mensal': {
-        const ultimoDia = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        return d.getDate() === Math.min(cfg.dia, ultimoDia); // dia 31 vira o último dia em meses curtos
+        const ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        return cfg.diasMes.some(x => Math.min(x, ult) === d.getDate());
       }
       case 'unico': return iso(d) === cfg.data;
     }
     return false;
   }
   function ultima(agora) {
-    for (let i = 0; i <= 400; i++) {
-      const d = new Date(agora); d.setDate(d.getDate() - i);
-      if (!casa(d)) continue;
-      const c = noHorario(d); if (c <= agora) return c;
-    }
+    for (let i = 0; i <= 400; i++) { const d = new Date(agora); d.setDate(d.getDate() - i); if (!casa(d)) continue; const c = noHorario(d); if (c <= agora) return c; }
     return null;
   }
   function proxima(agora) {
-    for (let i = 0; i <= 400; i++) {
-      const d = new Date(agora); d.setDate(d.getDate() + i);
-      if (!casa(d)) continue;
-      const c = noHorario(d); if (c > agora) return c;
-    }
+    for (let i = 0; i <= 400; i++) { const d = new Date(agora); d.setDate(d.getDate() + i); if (!casa(d)) continue; const c = noHorario(d); if (c > agora) return c; }
     return null;
   }
 
   function mostrarProximo() {
     const p = proxima(new Date());
     const regra = {
-      mensal: `Todo dia ${cfg.dia} do mês às ${cfg.hora}`,
-      semanal: `Toda ${cfg.dias.map(i => SEMANA_LONGA[i]).join(', ')} às ${cfg.hora}`,
+      mensal: `Todo mês, ${cfg.diasMes.length > 1 ? 'nos dias' : 'no dia'} ${lista(cfg.diasMes.map(nomeDia))}, às ${cfg.hora}`,
+      semanal: `Toda semana: ${lista(cfg.dias.map(i => SEMANA_LONGA[i]))}, às ${cfg.hora}`,
       diario: `Todos os dias às ${cfg.hora}`,
       unico: `Uma vez, às ${cfg.hora}`
     }[cfg.tipo];
@@ -292,47 +315,57 @@ h1 strong{font-weight:750;color:#4A2818}
   /* ---------- tela do lembrete ---------- */
   const tela = $('tela-lembrete');
   const alvo = document.querySelector('.texto-digitado');
-  let chaveAtual = null, timerDigitar = null, timerTitulo = null;
+  let chaveAtual = null, timerDigitar = null, timerTitulo = null, timerInsistir = null;
   const tituloOriginal = document.title;
 
+  function montar(frase, destaque, pos) {
+    const ini = destaque ? frase.indexOf(destaque) : -1;
+    const fim = ini >= 0 ? ini + destaque.length : -1;
+    const tx = frase.slice(0, pos);
+    alvo.replaceChildren();
+    if (ini < 0) { alvo.append(tx); return; }
+    alvo.append(tx.slice(0, ini));
+    const forte = tx.slice(ini, fim);
+    if (forte) { const b = document.createElement('strong'); b.textContent = forte; alvo.append(b); }
+    const depois = tx.slice(fim);
+    if (depois) alvo.append(depois);
+  }
   function digitar(frase, destaque) {
     clearTimeout(timerDigitar);
     $('mensagem-h1').setAttribute('aria-label', frase);
-    const ini = destaque ? frase.indexOf(destaque) : -1;
-    const fim = ini >= 0 ? ini + destaque.length : -1;
-    let pos = 0;
-    function atualizar() {
-      const tx = frase.slice(0, pos);
-      alvo.replaceChildren();
-      if (ini < 0) { alvo.append(tx); return; }
-      alvo.append(tx.slice(0, ini));
-      const forte = tx.slice(ini, fim);
-      if (forte) { const b = document.createElement('strong'); b.textContent = forte; alvo.append(b); }
-      const depois = tx.slice(fim);
-      if (depois) alvo.append(depois);
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { pos = frase.length; atualizar(); return; }
-    atualizar();
-    function passo() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { montar(frase, destaque, frase.length); return; }
+    let pos = 0; montar(frase, destaque, 0);
+    const passo = () => {
       if (pos >= frase.length) return;
-      pos += 1; atualizar();
+      pos += 1; montar(frase, destaque, pos);
       timerDigitar = setTimeout(passo, /[.,]/.test(frase[pos-1]) ? 340 : 45);
-    }
+    };
     timerDigitar = setTimeout(passo, 550);
+  }
+
+  function telaCheia() {
+    if (document.fullscreenElement) return;
+    const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+    try { const r = f && f.call(el); if (r && r.catch) r.catch(() => {}); } catch(e) {}
+  }
+  function sairTelaCheia() {
+    if (!document.fullscreenElement) return;
+    try { const r = document.exitFullscreen(); if (r && r.catch) r.catch(() => {}); } catch(e) {}
   }
 
   let audioCtx = null;
   function bip() {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      [0, .35].forEach(t => {
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = 'sine'; o.frequency.value = 880;
-        g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t);
-        g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + t + .02);
-        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + .3);
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      [0, .32, .64].forEach((t, i) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = audioCtx.currentTime + t;
+        o.type = 'sine'; o.frequency.value = i === 2 ? 1046 : 880;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.28, t0 + .02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + .28);
         o.connect(g).connect(audioCtx.destination);
-        o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + .32);
+        o.start(t0); o.stop(t0 + .3);
       });
     } catch(e) {}
   }
@@ -340,44 +373,52 @@ h1 strong{font-weight:750;color:#4A2818}
   function notificar() {
     try {
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      const n = new Notification(cfg.titulo, { body: cfg.mensagem, requireInteraction: true, tag: 'madeirol-lembrete' });
-      n.onclick = () => { window.focus(); n.close(); };
+      const n = new Notification('🔔 ' + cfg.titulo, { body: cfg.mensagem, requireInteraction: true, renotify: true, tag: 'madeirol-lembrete' });
+      n.onclick = () => { window.focus(); telaCheia(); n.close(); };
     } catch(e) {}
   }
 
-  function mostrar(chave, silencioso) {
+  function mostrar(chave, previa, dados) {
+    const c = dados || cfg;
     chaveAtual = chave;
-    $('txt-titulo').textContent = cfg.titulo;
+    $('txt-titulo').textContent = c.titulo;
     tela.classList.add('ativo');
     document.body.style.overflow = 'hidden';
-    digitar(cfg.mensagem, cfg.destaque);
+    telaCheia();
+    digitar(c.mensagem, c.destaque);
     $('btn-ok').focus({ preventScroll: true });
-    if (silencioso) return;
+    if (previa) return;
+    try { window.focus(); } catch(e) {}
     bip(); notificar();
-    clearInterval(timerTitulo);
+    clearInterval(timerTitulo); clearInterval(timerInsistir);
     let alt = false;
-    timerTitulo = setInterval(() => { document.title = (alt = !alt) ? '🔔 ' + cfg.titulo : tituloOriginal; }, 1000);
+    timerTitulo = setInterval(() => { document.title = (alt = !alt) ? '🔔 ' + cfg.titulo.toUpperCase() : tituloOriginal; }, 900);
+    timerInsistir = setInterval(() => { bip(); notificar(); }, 30000); // insiste até alguém confirmar
   }
   function esconder() {
     tela.classList.remove('ativo');
     document.body.style.overflow = '';
-    clearTimeout(timerDigitar); clearInterval(timerTitulo);
+    clearTimeout(timerDigitar); clearInterval(timerTitulo); clearInterval(timerInsistir);
     document.title = tituloOriginal;
+    sairTelaCheia();
   }
-  $('btn-ok').addEventListener('click', () => {
-    if (chaveAtual) gravar(K_ACK, chaveAtual);
-    chaveAtual = null; esconder();
-  });
+  // qualquer toque na tela do lembrete já coloca o navegador em tela cheia
+  tela.addEventListener('pointerdown', e => { if (!e.target.closest('button')) telaCheia(); });
+
+  $('btn-ok').addEventListener('click', () => { if (chaveAtual) gravar(K_ACK, chaveAtual); chaveAtual = null; esconder(); });
   $('btn-adiar').addEventListener('click', () => {
     if (chaveAtual) gravar(K_ACK, chaveAtual);
     gravar(K_SNOOZE, String(Date.now() + 10 * 60 * 1000));
     chaveAtual = null; esconder(); aviso('Vou lembrar de novo em 10 minutos.');
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && tela.classList.contains('ativo')) $('btn-ok').click(); });
-  $('btn-testar').addEventListener('click', () => mostrar(null, true));
+  $('btn-testar').addEventListener('click', () => mostrar(null, true, {
+    titulo: $('titulo').value.trim() || PADRAO.titulo,
+    mensagem: $('mensagem').value.trim() || PADRAO.mensagem,
+    destaque: $('destaque').value.trim()
+  }));
 
   /* ---------- verificação periódica ---------- */
-  const UM_DIA = 24 * 60 * 60 * 1000;
+  const UM_DIA = 864e5;
   function verificar() {
     if (tela.classList.contains('ativo')) return;
     const agora = new Date();
@@ -396,11 +437,10 @@ h1 strong{font-weight:750;color:#4A2818}
     else if (Notification.permission === 'denied') { b.textContent = 'Notificações bloqueadas'; b.disabled = true; }
   }
   $('btn-notif').addEventListener('click', async () => {
-    bip(); // também libera o som no navegador
+    bip();
     try { await Notification.requestPermission(); } catch(e) {}
     rotuloNotif();
   });
-  document.addEventListener('click', () => { try { audioCtx && audioCtx.state === 'suspended' && audioCtx.resume(); } catch(e) {} }, { once: true });
 
   /* ---------- aviso rápido ---------- */
   let timerToast;
