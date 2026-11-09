@@ -112,6 +112,26 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 .app-icone{width:56px;height:56px;flex-shrink:0;border-radius:14px}
 
 /* login */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--milk)}
+.seg label{position:relative;cursor:pointer}
+.seg label+label{border-left:1px solid var(--line)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:flex;flex-direction:column;gap:3px;padding:13px 14px;height:100%;transition:background .2s,color .2s}
+.seg b{font-size:14px}
+.seg small{font-size:12px;color:var(--muted)}
+.seg label:hover span{background:var(--sand)}
+.seg input:checked+span{background:var(--cocoa);color:#fff}
+.seg input:checked+span small{color:var(--cream)}
+.seg input:focus-visible+span{outline:2px solid var(--copper);outline-offset:-4px}
+.drop{display:grid;place-items:center;gap:6px;text-align:center;padding:30px 18px;border:2px dashed var(--line);border-radius:16px;background:var(--milk);cursor:pointer;transition:border-color .2s,background .2s}
+.drop strong{font-size:16px}
+.drop span{font-size:13px;color:var(--muted)}
+.drop:hover,.drop.sobre{border-color:var(--brown);background:var(--sand)}
+.drop.cheio{border-style:solid;border-color:var(--ok);background:#eef6ef}
+.mini-previa{position:relative;aspect-ratio:16/9;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;margin-top:8px}
+.mini-previa iframe{position:absolute;top:0;left:0;width:400%;height:400%;border:0;transform:scale(.25);transform-origin:0 0;pointer-events:none}
+.mini-vazio{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;background:var(--milk)}
+@media(max-width:600px){.seg{grid-template-columns:1fr}.seg label+label{border-left:0;border-top:1px solid var(--line)}}
 .login{max-width:440px;margin:clamp(20px,6vh,60px) auto 0}
 .troca{text-align:center;font-size:14px}
 .troca .voltar{font-size:14px}
@@ -220,7 +240,6 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     <nav class="abas" id="abas">
       <button type="button" class="aba" data-aba="meus">Meus lembretes</button>
       <button type="button" class="aba so-mestre" data-aba="conectados">Conectados</button>
-      <button type="button" class="aba so-mestre" data-aba="modelos">Modelos HTML</button>
       <button type="button" class="aba" data-aba="aplicativo">Aplicativo</button>
     </nav>
 
@@ -261,23 +280,6 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
           <span class="rotulo">Lembretes</span>
           <div class="lista" id="lista-pessoa"></div>
         </div>
-      </div>
-    </section>
-
-    <!-- modelos -->
-    <section id="aba-modelos" class="oculto">
-      <h2>Modelos <strong>HTML</strong></h2>
-      <p class="sub">Coloque aqui outras telas em HTML para usar no lugar do comunicado padrão. Na hora de criar um lembrete, escolha o modelo em "Tela do lembrete". O HTML aparece em tela cheia, com os botões "Ok, entendi" e "Lembrar em 10 min" no canto.</p>
-      <form class="cartao" id="form-modelo">
-        <div class="linha2">
-          <div class="campo"><label for="modelo-nome">Nome do modelo</label><input type="text" id="modelo-nome" maxlength="60" placeholder="Ex.: Aviso de reunião" required></div>
-          <div class="campo"><label for="modelo-arquivo">Arquivo .html</label><input type="file" id="modelo-arquivo" accept=".html,.htm,text/html" required style="padding:10px;background:var(--milk);border:1px dashed var(--line);border-radius:var(--r)"></div>
-        </div>
-        <div class="acoes"><button type="submit" class="btn">Adicionar modelo</button></div>
-      </form>
-      <div class="cartao">
-        <span class="rotulo">Modelos cadastrados</span>
-        <div class="lista" id="lista-modelos"></div>
       </div>
     </section>
 
@@ -322,11 +324,37 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       <div class="campo oculto" id="campo-data"><label for="data">Data</label><input type="date" id="data"></div>
       <div class="campo"><label for="hora">Horário</label><input type="time" id="hora" required></div>
     </div>
+    <div class="campo"><label for="titulo">Título do lembrete</label><input type="text" id="titulo" maxlength="40" required>
+      <p class="dica">Aparece no aviso do Windows e no menu do sino.</p></div>
     <div class="campo">
-      <label for="modelo">Tela do lembrete</label>
-      <select id="modelo"><option value="">Comunicado padrão Madeirol</option></select>
+      <span class="rotulo">O que vai aparecer na tela</span>
+      <div class="seg" role="radiogroup" aria-label="Tela do lembrete">
+        <label><input type="radio" name="tela" value="padrao" checked><span><b>Comunicado Madeirol</b><small>Texto no layout marrom</small></span></label>
+        <label><input type="radio" name="tela" value="arquivo"><span><b>Arquivo</b><small>Imagem ou HTML</small></span></label>
+        <label><input type="radio" name="tela" value="link"><span><b>Link</b><small>Endereço de página ou imagem</small></span></label>
+      </div>
     </div>
-    <div class="campo"><label for="titulo">Título do lembrete</label><input type="text" id="titulo" maxlength="40" required></div>
+    <div id="tela-arquivo" class="oculto">
+      <label class="drop" id="drop">
+        <input type="file" id="arquivo" accept="image/*,.html,.htm,text/html" hidden>
+        <strong>Arraste o arquivo aqui</strong>
+        <span>ou clique para escolher · imagem (JPG, PNG…) ou HTML</span>
+      </label>
+      <div class="campo" id="campo-ja-enviados" style="margin-top:14px">
+        <label for="modelo">Ou use um arquivo que já foi enviado</label>
+        <select id="modelo"><option value="">Escolha…</option></select>
+      </div>
+    </div>
+    <div id="tela-link" class="campo oculto">
+      <label for="link">Link</label>
+      <input type="text" id="link" inputmode="url" placeholder="https://..." spellcheck="false">
+      <p class="dica">Pode ser o endereço de uma imagem ou de uma página. Alguns sites não deixam ser mostrados dentro de outra tela; confira na prévia.</p>
+    </div>
+    <div id="tela-previa" class="oculto">
+      <span class="rotulo">Como vai ficar</span>
+      <div class="mini-previa"><iframe id="mini-frame" title="Prévia" sandbox="allow-scripts"></iframe><div class="mini-vazio" id="mini-vazio">A prévia aparece aqui</div></div>
+      <p class="dica" id="arquivo-info"></p>
+    </div>
     <div id="campos-texto">
       <div class="campo"><label for="mensagem">Mensagem</label><textarea id="mensagem" maxlength="220"></textarea></div>
       <div class="campo" style="margin-top:20px"><label for="destaque">Trecho em negrito (copie da mensagem)</label><input type="text" id="destaque" maxlength="220"></div>
@@ -534,8 +562,11 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   function mostrarAlerta(dados, real) {
     alertaAtual = { real };
     document.body.style.overflow = 'hidden';
-    if (dados.html) {
-      $('frame-html').srcdoc = dados.html;
+    if (dados.html || dados.link) {
+      const fr = $('frame-html');
+      if (dados.html) { fr.removeAttribute('src'); fr.srcdoc = dados.html; }
+      else if (/\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(dados.link)) { fr.removeAttribute('src'); fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#111}body{display:grid;place-items:center}img{width:100%;height:100vh;object-fit:contain;display:block}</style></head><body><img src="${String(dados.link).replace(/"/g, '&quot;')}" alt=""></body></html>`; }
+      else { fr.removeAttribute('srcdoc'); fr.src = dados.link; }
       telaHtml.classList.add('ativo');
     } else {
       $('txt-titulo').textContent = dados.titulo || 'Lembrete';
@@ -548,7 +579,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   }
   function esconderAlerta() {
     telaPadrao.classList.remove('ativo'); telaHtml.classList.remove('ativo');
-    $('frame-html').srcdoc = '';
+    $('frame-html').removeAttribute('srcdoc'); $('frame-html').src = 'about:blank';
     document.body.style.overflow = '';
     clearTimeout(timerDigitar); clearInterval(timerInsistir);
     sairTelaCheia(); alertaAtual = null;
@@ -635,7 +666,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   async function sair(expirou) {
     if (!expirou && sessao) { try { await rpc('lemb_sair', { p_sessao: sessao }); } catch(e) {} }
     sessao = null; eu = null; pessoas = []; pessoaAtual = null; modelos = []; gravar('madeirol_sessao', null);
-    ['lista-meus', 'lista-pessoa', 'pessoas', 'lista-modelos'].forEach(id => $(id).innerHTML = '');
+    ['lista-meus', 'lista-pessoa', 'pessoas'].forEach(id => $(id).innerHTML = '');
     mostrarListaPessoas();
     mostrarLogin();
     if (expirou) $('login-erro').textContent = MENSAGENS.SESSAO_EXPIRADA;
@@ -653,23 +684,23 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       ? 'Os seus lembretes. Para mudar os de outra pessoa, vá em Conectados.'
       : 'Os lembretes que vão aparecer na sua tela. Quem cuida deles é o responsável pelo painel.';
     if (eu.mestre) carregarModelos().catch(() => {});
-    irPara(ler('madeirol_aba') && (eu.mestre || ['meus', 'aplicativo'].includes(ler('madeirol_aba'))) ? ler('madeirol_aba') : (eu.mestre ? 'conectados' : 'meus'));
+    const salva = ler('madeirol_aba');
+    irPara(salva && (eu.mestre ? ['meus', 'conectados', 'aplicativo'] : ['meus', 'aplicativo']).includes(salva) ? salva : (eu.mestre ? 'conectados' : 'meus'));
   }
 
   /* --- abas --- */
   function irPara(aba) {
     gravar('madeirol_aba', aba);
     document.querySelectorAll('.aba').forEach(b => b.classList.toggle('ativa', b.dataset.aba === aba));
-    ['meus', 'conectados', 'modelos', 'aplicativo'].forEach(a => $('aba-' + a).classList.toggle('oculto', a !== aba));
+    ['meus', 'conectados', 'aplicativo'].forEach(a => $('aba-' + a).classList.toggle('oculto', a !== aba));
     if (aba === 'meus') carregarLembretes(eu.id, $('lista-meus'));
     if (aba === 'conectados') { mostrarListaPessoas(); carregarPessoas(); }
-    if (aba === 'modelos') carregarModelos();
     if (aba === 'aplicativo') statusApp();
   }
   $('abas').addEventListener('click', e => { const b = e.target.closest('.aba'); if (b) irPara(b.dataset.aba); });
 
   /* --- lembretes --- */
-  function nomeModelo(id) { const m = modelos.find(x => x.id === id); return m ? m.nome : 'Modelo HTML'; }
+  function nomeModelo(id) { const m = modelos.find(x => x.id === id); return m ? m.nome : 'imagem/HTML'; }
   async function carregarLembretes(usuarioId, el) {
     el.innerHTML = '<div class="vazio">Carregando…</div>';
     try {
@@ -688,7 +719,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       const p = l.ativo ? proxima(l, agora) : null;
       return `<div class="item${l.ativo ? '' : ' inativo'}">
         <div class="item-info">
-          <p class="item-titulo">${esc(l.titulo)} ${l.ativo ? '' : '<span class="selo">Pausado</span>'} ${l.modelo_id ? `<span class="selo">${esc(nomeModelo(l.modelo_id))}</span>` : ''}</p>
+          <p class="item-titulo">${esc(l.titulo)} ${l.ativo ? '' : '<span class="selo">Pausado</span>'} ${l.modelo_id ? `<span class="selo">Arquivo: ${esc(nomeModelo(l.modelo_id))}</span>` : ''}${l.link ? '<span class="selo">Link</span>' : ''}</p>
           <div class="item-sub">${esc(regra(l))}<br>${p ? 'Próximo: <b>' + esc(fmtData(p)) + '</b>' : (l.ativo ? 'Sem data futura' : 'Não vai aparecer enquanto estiver pausado')}</div>
         </div>
         ${eu.mestre ? `<div class="acoes">
@@ -726,20 +757,97 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   });
 
   function preencherModelosSelect(valor) {
-    $('modelo').innerHTML = '<option value="">Comunicado padrão Madeirol</option>' + modelos.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('');
+    $('modelo').innerHTML = '<option value="">Escolha…</option>' + modelos.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('');
     $('modelo').value = valor || '';
+    $('campo-ja-enviados').classList.toggle('oculto', !modelos.length);
+  }
+  /* --- arquivo / link da tela --- */
+  let arquivoNovo = null; // { nome, html }
+  const ehImagemLink = u => /\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(u) || /^data:image\//i.test(u);
+  const htmlImagem = src => `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#111}body{display:grid;place-items:center}img{width:100%;height:100vh;object-fit:contain;display:block}</style></head><body><img src="${String(src).replace(/"/g, '&quot;')}" alt=""></body></html>`;
+  const telaEscolhida = () => (document.querySelector('input[name=tela]:checked') || {}).value || 'padrao';
+  function marcarTela(v) { document.querySelectorAll('input[name=tela]').forEach(r => r.checked = r.value === v); }
+  function lerImagem(f) {
+    // reduz a imagem para no máximo 1920px, para caber no banco e abrir rápido
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(f), img = new Image();
+      img.onload = () => {
+        const esc = Math.min(1, 1920 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * esc); c.height = Math.round(img.height * esc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        res(c.toDataURL(/png|gif|svg/i.test(f.type) ? 'image/png' : 'image/jpeg', .88));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Não consegui abrir essa imagem.')); };
+      img.src = url;
+    });
+  }
+  async function receberArquivo(f) {
+    if (!f) return;
+    try {
+      let html;
+      if (/^image\//.test(f.type)) html = htmlImagem(await lerImagem(f));
+      else if (/\.html?$/i.test(f.name) || f.type === 'text/html') html = await f.text();
+      else return aviso('Use uma imagem ou um arquivo .html.');
+      if (html.length > 3e6) return aviso(MENSAGENS.HTML_GRANDE);
+      arquivoNovo = { nome: f.name.replace(/\.[^.]+$/, ''), html };
+      $('modelo').value = '';
+      $('drop').classList.add('cheio');
+      $('drop').querySelector('strong').textContent = '✓ ' + f.name;
+      $('drop').querySelector('span').textContent = 'Clique ou arraste outro para trocar';
+      atualizarEditor();
+    } catch(e) { aviso(e.message); }
+  }
+  $('arquivo').addEventListener('change', () => receberArquivo($('arquivo').files[0]));
+  ['dragenter', 'dragover'].forEach(ev => $('drop').addEventListener(ev, e => { e.preventDefault(); $('drop').classList.add('sobre'); }));
+  ['dragleave', 'drop'].forEach(ev => $('drop').addEventListener(ev, e => { e.preventDefault(); $('drop').classList.remove('sobre'); }));
+  $('drop').addEventListener('drop', e => receberArquivo(e.dataTransfer.files[0]));
+  function limparArquivo() {
+    arquivoNovo = null; $('arquivo').value = '';
+    $('drop').classList.remove('cheio');
+    $('drop').querySelector('strong').textContent = 'Arraste o arquivo aqui';
+    $('drop').querySelector('span').textContent = 'ou clique para escolher · imagem (JPG, PNG…) ou HTML';
+  }
+  $('modelo').addEventListener('change', () => { if ($('modelo').value) limparArquivo(); });
+  const cacheModelo = {};
+  async function htmlDoModelo(id) {
+    if (!cacheModelo[id]) cacheModelo[id] = (await rpc('lemb_modelo_obter', { p_sessao: sessao, p_id: id })).html;
+    return cacheModelo[id];
+  }
+  let ultimaPrevia = '';
+  async function atualizarMiniPrevia() {
+    const tela = telaEscolhida(), fr = $('mini-frame');
+    let chave = '', fonte = null;
+    if (tela === 'arquivo') {
+      if (arquivoNovo) { chave = 'novo:' + arquivoNovo.nome + arquivoNovo.html.length; fonte = { html: arquivoNovo.html }; }
+      else if ($('modelo').value) { chave = 'm:' + $('modelo').value; fonte = { id: $('modelo').value }; }
+    } else if (tela === 'link') {
+      const u = $('link').value.trim();
+      if (/^https?:\/\//i.test(u)) { chave = 'l:' + u; fonte = ehImagemLink(u) ? { html: htmlImagem(u) } : { url: u }; }
+    }
+    if (chave === ultimaPrevia) return;
+    ultimaPrevia = chave;
+    $('mini-vazio').classList.toggle('oculto', !!fonte);
+    $('arquivo-info').textContent = '';
+    if (!fonte) { fr.removeAttribute('srcdoc'); fr.src = 'about:blank'; return; }
+    if (fonte.url) { fr.removeAttribute('srcdoc'); fr.src = fonte.url; return; }
+    const html = fonte.html || await htmlDoModelo(fonte.id).catch(() => '');
+    fr.removeAttribute('src'); fr.srcdoc = html;
   }
   function abrirEditor(usuarioId, l) {
     edicao = { usuarioId, original: l || null };
     const dono = usuarioId === eu.id ? 'você' : ((pessoas.find(p => p.id === usuarioId) || {}).nome || '');
     $('ml-titulo').innerHTML = l ? 'Editar <strong>lembrete</strong>' : 'Novo <strong>lembrete</strong>';
     $('ml-para').innerHTML = 'Para: <b>' + esc(dono) + '</b>';
-    const v = l || { tipo: 'mensal', dias_mes: [new Date().getDate()], dias: [1], data: '', hora: '09:00', titulo: '', mensagem: '', destaque: '', ativo: true, modelo_id: null };
+    const v = l || { tipo: 'mensal', dias_mes: [new Date().getDate()], dias: [1], data: '', hora: '09:00', titulo: '', mensagem: '', destaque: '', ativo: true, modelo_id: null, link: '' };
     $('tipo').value = v.tipo; $('data').value = v.data ? String(v.data).slice(0, 10) : ''; $('hora').value = v.hora;
     $('titulo').value = v.titulo; $('mensagem').value = v.mensagem; $('destaque').value = v.destaque; $('ativo').checked = v.ativo;
     document.querySelectorAll('#mes input').forEach(c => c.checked = (v.dias_mes || []).includes(+c.value));
     document.querySelectorAll('#dias input').forEach(c => c.checked = (v.dias || []).includes(+c.value));
     preencherModelosSelect(v.modelo_id);
+    limparArquivo(); ultimaPrevia = null;
+    $('link').value = v.link || '';
+    marcarTela(v.modelo_id ? 'arquivo' : (v.link ? 'link' : 'padrao'));
     $('btn-excluir-lembrete').classList.toggle('oculto', !l);
     $('ml-erro').textContent = '';
     atualizarEditor();
@@ -751,7 +859,9 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       tipo: $('tipo').value, dias_mes: marcados('#mes'), dias: marcados('#dias'),
       data: $('data').value, hora: $('hora').value || '09:00',
       titulo: $('titulo').value.trim(), mensagem: $('mensagem').value.trim(), destaque: $('destaque').value.trim(),
-      ativo: $('ativo').checked, modelo_id: $('modelo').value || null
+      ativo: $('ativo').checked, tela: telaEscolhida(),
+      modelo_id: telaEscolhida() === 'arquivo' ? ($('modelo').value || null) : null,
+      link: telaEscolhida() === 'link' ? $('link').value.trim() : ''
     };
   }
   function atualizarEditor() {
@@ -759,7 +869,12 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     $('campo-mes').classList.toggle('oculto', t !== 'mensal');
     $('campo-data').classList.toggle('oculto', t !== 'unico');
     $('campo-semana').classList.toggle('oculto', t !== 'semanal');
-    $('campos-texto').classList.toggle('oculto', !!$('modelo').value);
+    const tela = telaEscolhida();
+    $('campos-texto').classList.toggle('oculto', tela !== 'padrao');
+    $('tela-arquivo').classList.toggle('oculto', tela !== 'arquivo');
+    $('tela-link').classList.toggle('oculto', tela !== 'link');
+    $('tela-previa').classList.toggle('oculto', tela === 'padrao');
+    atualizarMiniPrevia();
     const dm = marcados('#mes');
     $('dica-mes').innerHTML = dm.length ? `Selecionados: <b>${lista(dm.map(nomeDia))}</b>. Em meses mais curtos, 30 e 31 caem no último dia.` : 'Clique nos dias. Pode marcar mais de um.';
     const v = lerEditor(), p = proxima(v, new Date());
@@ -775,14 +890,22 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     if (v.tipo === 'mensal' && !v.dias_mes.length) return err.textContent = 'Escolha pelo menos um dia do mês.';
     if (v.tipo === 'semanal' && !v.dias.length) return err.textContent = 'Escolha pelo menos um dia da semana.';
     if (v.tipo === 'unico' && !v.data) return err.textContent = 'Escolha a data.';
-    if (!v.modelo_id && !v.mensagem) return err.textContent = 'Escreva a mensagem do lembrete.';
+    if (v.tela === 'padrao' && !v.mensagem) return err.textContent = 'Escreva a mensagem do lembrete.';
+    if (v.tela === 'arquivo' && !v.modelo_id && !arquivoNovo) return err.textContent = 'Arraste ou escolha o arquivo que vai aparecer.';
+    if (v.tela === 'link' && !/^https?:\/\/\S+$/i.test(v.link)) return err.textContent = 'Cole um link completo, começando com https://';
     const o = edicao.original;
     const dados = { ...v, id: o ? o.id : null, usuario_id: edicao.usuarioId };
+    delete dados.tela;
     // horário novo ou mudado: não dispara por um horário que já passou
     const mudouAgenda = !o || ['tipo', 'hora', 'data'].some(k => String(o[k] || '').slice(0, 10) !== String(v[k] || '').slice(0, 10))
       || JSON.stringify(o.dias_mes) !== JSON.stringify(v.dias_mes) || JSON.stringify(o.dias) !== JSON.stringify(v.dias);
     if (mudouAgenda) { const u = ultima(v, new Date()); dados.ack = u ? chaveData(u) : ''; }
     try {
+      if (v.tela === 'arquivo' && arquivoNovo) {
+        const m = await rpc('lemb_modelo_salvar', { p_sessao: sessao, p_id: null, p_nome: arquivoNovo.nome || v.titulo, p_html: arquivoNovo.html });
+        dados.modelo_id = m.id; cacheModelo[m.id] = arquivoNovo.html;
+        carregarModelos().catch(() => {});
+      }
       await rpc('lemb_lembrete_salvar', { p_sessao: sessao, p_dados: dados });
       fecharModal('modal-lembrete');
       aviso('Lembrete salvo. Chega no computador da pessoa em até 1 minuto.');
@@ -796,9 +919,13 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   });
   $('btn-previa').addEventListener('click', async () => {
     const v = lerEditor();
-    if (v.modelo_id) {
-      try { const m = await rpc('lemb_modelo_obter', { p_sessao: sessao, p_id: v.modelo_id }); mostrarAlerta({ html: m.html }, false); }
-      catch(e) { tratarErro(e); }
+    if (v.tela === 'arquivo') {
+      if (arquivoNovo) return mostrarAlerta({ html: arquivoNovo.html }, false);
+      if (!v.modelo_id) return aviso('Arraste ou escolha o arquivo primeiro.');
+      try { mostrarAlerta({ html: await htmlDoModelo(v.modelo_id) }, false); } catch(e) { tratarErro(e); }
+    } else if (v.tela === 'link') {
+      if (!/^https?:\/\//i.test(v.link)) return aviso('Cole o link primeiro.');
+      mostrarAlerta({ link: v.link }, false);
     } else mostrarAlerta({ titulo: v.titulo || 'Lembrete', mensagem: v.mensagem || 'Sua mensagem aparece aqui.', destaque: v.destaque }, false);
   });
   document.querySelectorAll('[data-ok]').forEach(b => b.addEventListener('click', esconderAlerta));
@@ -899,45 +1026,8 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
 
   /* --- modelos HTML --- */
   async function carregarModelos() {
-    const el = $('lista-modelos');
-    try {
-      modelos = await rpc('lemb_modelos_listar', { p_sessao: sessao });
-      el.innerHTML = modelos.map(m => `<div class="item">
-          <div class="item-info"><p class="item-titulo">${esc(m.nome)}</p><div class="item-sub">${Math.max(1, Math.round(m.tamanho / 1024))} KB · usado em ${m.usos} lembrete${m.usos == 1 ? '' : 's'}</div></div>
-          <div class="acoes">
-            <button type="button" class="btn sec peq" data-ver="${m.id}">Ver</button>
-            <label class="btn sec peq" style="cursor:pointer">Trocar arquivo<input type="file" accept=".html,.htm,text/html" data-trocar="${m.id}" hidden></label>
-            <button type="button" class="btn perigo peq" data-apagar="${m.id}">Excluir</button>
-          </div></div>`).join('') || '<div class="vazio">Nenhum modelo ainda. Adicione um arquivo .html acima.</div>';
-      el.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', async () => {
-        try { const m = await rpc('lemb_modelo_obter', { p_sessao: sessao, p_id: b.dataset.ver }); mostrarAlerta({ html: m.html }, false); } catch(e) { tratarErro(e); }
-      }));
-      el.querySelectorAll('[data-trocar]').forEach(inp => inp.addEventListener('change', async () => {
-        const f = inp.files[0]; if (!f) return;
-        const m = modelos.find(x => x.id === inp.dataset.trocar);
-        try { await rpc('lemb_modelo_salvar', { p_sessao: sessao, p_id: m.id, p_nome: m.nome, p_html: await f.text() }); aviso('Arquivo trocado.'); carregarModelos(); } catch(e) { tratarErro(e); }
-      }));
-      el.querySelectorAll('[data-apagar]').forEach(b => b.addEventListener('click', async () => {
-        const m = modelos.find(x => x.id === b.dataset.apagar);
-        if (!confirm(`Excluir o modelo "${m.nome}"?` + (m.usos ? ` Os ${m.usos} lembrete(s) que usam ele voltam para o comunicado padrão.` : ''))) return;
-        try { await rpc('lemb_modelo_excluir', { p_sessao: sessao, p_id: m.id }); aviso('Modelo excluído.'); carregarModelos(); } catch(e) { tratarErro(e); }
-      }));
-    } catch(e) { tratarErro(e); }
+    try { modelos = await rpc('lemb_modelos_listar', { p_sessao: sessao }); } catch(e) { tratarErro(e); }
   }
-  $('form-modelo').addEventListener('submit', async e => {
-    e.preventDefault();
-    const f = $('modelo-arquivo').files[0];
-    if (!f) return aviso('Escolha o arquivo .html.');
-    if (f.size > 3e6) return aviso(MENSAGENS.HTML_GRANDE);
-    try {
-      await rpc('lemb_modelo_salvar', { p_sessao: sessao, p_id: null, p_nome: $('modelo-nome').value, p_html: await f.text() });
-      $('form-modelo').reset(); aviso('Modelo adicionado. Já dá para escolher ele nos lembretes.'); carregarModelos();
-    } catch(e2) { tratarErro(e2); }
-  });
-  $('modelo-arquivo').addEventListener('change', () => {
-    const f = $('modelo-arquivo').files[0];
-    if (f && !$('modelo-nome').value) $('modelo-nome').value = f.name.replace(/\.html?$/i, '').replace(/[-_]+/g, ' ');
-  });
 
   /* --- aplicativo (instalador) --- */
   async function statusApp() {
