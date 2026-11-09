@@ -112,7 +112,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 .app-icone{width:56px;height:56px;flex-shrink:0;border-radius:14px}
 
 /* login */
-.login{max-width:420px;margin:clamp(20px,6vh,60px) auto 0}
+.login{max-width:440px;margin:clamp(20px,6vh,60px) auto 0}
+.troca{text-align:center;font-size:14px}
+.troca .voltar{font-size:14px}
 
 /* janelas (modal) */
 .modal{position:fixed;inset:0;z-index:200;background:rgba(40,20,10,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:clamp(12px,4vh,48px) 12px}
@@ -191,6 +193,25 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       <div class="campo"><label for="login-senha">Senha</label><input type="password" id="login-senha" autocomplete="current-password" required></div>
       <p class="erro" id="login-erro"></p>
       <div class="acoes"><button type="submit" class="btn" id="btn-entrar">Entrar</button></div>
+      <p class="aviso troca">Ainda não tem acesso? <button type="button" class="voltar" id="ir-cadastro">Criar conta</button></p>
+    </form>
+  </section>
+
+  <!-- ===== CRIAR CONTA ===== -->
+  <section id="tela-cadastro" class="login oculto">
+    <h2>Criar <strong>conta</strong></h2>
+    <p class="sub">Depois de criar, você entra direto e já pode baixar o aplicativo. Os seus lembretes são definidos pelo responsável pelo painel.</p>
+    <form class="cartao" id="form-cadastro" autocomplete="on">
+      <div class="campo"><label for="cad-nome">Seu nome</label><input type="text" id="cad-nome" maxlength="60" autocomplete="name" required></div>
+      <div class="campo"><label for="cad-usuario">Usuário (para entrar)</label><input type="text" id="cad-usuario" maxlength="40" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        <p class="dica">Só letras minúsculas, números, ponto ou traço. Sem espaço nem acento.</p></div>
+      <div class="linha2">
+        <div class="campo"><label for="cad-senha">Senha</label><input type="password" id="cad-senha" autocomplete="new-password" required></div>
+        <div class="campo"><label for="cad-senha2">Repita a senha</label><input type="password" id="cad-senha2" autocomplete="new-password" required></div>
+      </div>
+      <p class="erro" id="cad-erro"></p>
+      <div class="acoes"><button type="submit" class="btn" id="btn-cadastrar">Criar conta</button></div>
+      <p class="aviso troca">Já tem conta? <button type="button" class="voltar" id="ir-login">Entrar</button></p>
     </form>
   </section>
 
@@ -327,7 +348,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     <div class="modal-cab"><h3 id="mp-titulo">Adicionar <strong>pessoa</strong></h3><button type="button" class="fechar" data-fechar aria-label="Fechar">×</button></div>
     <div class="campo"><label for="p-nome-in">Nome</label><input type="text" id="p-nome-in" maxlength="60" required></div>
     <div class="linha2">
-      <div class="campo"><label for="p-usuario-in">Usuário (para entrar)</label><input type="text" id="p-usuario-in" maxlength="40" autocapitalize="off" spellcheck="false" placeholder="ex.: isabella" required></div>
+      <div class="campo"><label for="p-usuario-in">Usuário (para entrar)</label><input type="text" id="p-usuario-in" maxlength="40" autocapitalize="off" spellcheck="false" placeholder="ex.: pablo" required></div>
       <div class="campo"><label for="p-senha-in">Senha</label><input type="text" id="p-senha-in" maxlength="60" autocomplete="new-password"></div>
     </div>
     <p class="dica" id="p-senha-dica">Mínimo de 4 caracteres. Passe o usuário e a senha para a pessoa.</p>
@@ -569,7 +590,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
 
   /* --- login --- */
   function mostrarLogin() {
-    $('tela-login').classList.remove('oculto'); $('tela-app').classList.add('oculto');
+    $('tela-login').classList.remove('oculto'); $('tela-cadastro').classList.add('oculto'); $('tela-app').classList.add('oculto');
     $('quem').classList.add('oculto'); $('topo-marcador').classList.remove('oculto');
     setTimeout(() => $('login-usuario').focus(), 50);
   }
@@ -584,6 +605,33 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     } catch(err) { $('login-erro').textContent = err.message; }
     $('btn-entrar').disabled = false; $('btn-entrar').textContent = 'Entrar';
   });
+  function mostrarCadastro() {
+    $('tela-login').classList.add('oculto'); $('tela-cadastro').classList.remove('oculto');
+    $('cad-erro').textContent = '';
+    setTimeout(() => $('cad-nome').focus(), 50);
+  }
+  $('ir-cadastro').addEventListener('click', mostrarCadastro);
+  $('ir-login').addEventListener('click', () => { mostrarLogin(); $('login-erro').textContent = ''; });
+  $('cad-nome').addEventListener('input', () => {
+    if ($('cad-usuario').dataset.mexeu) return;
+    $('cad-usuario').value = $('cad-nome').value.trim().split(/\s+/)[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9._-]/g, '');
+  });
+  $('cad-usuario').addEventListener('input', () => { $('cad-usuario').dataset.mexeu = '1'; });
+  $('form-cadastro').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('cad-erro'); err.textContent = '';
+    if ($('cad-senha').value !== $('cad-senha2').value) return err.textContent = 'As duas senhas não são iguais.';
+    const b = $('btn-cadastrar'); b.disabled = true; b.textContent = 'Criando…';
+    try {
+      const r = await rpc('lemb_criar_conta', { p_nome: $('cad-nome').value, p_usuario: $('cad-usuario').value, p_senha: $('cad-senha').value });
+      sessao = r.sessao; gravar('madeirol_sessao', sessao);
+      $('form-cadastro').reset(); delete $('cad-usuario').dataset.mexeu;
+      await iniciarApp();
+      aviso(`Conta criada! Seu usuário é ${r.usuario}.`);
+    } catch(e2) { err.textContent = e2.message; }
+    b.disabled = false; b.textContent = 'Criar conta';
+  });
+
   async function sair(expirou) {
     if (!expirou && sessao) { try { await rpc('lemb_sair', { p_sessao: sessao }); } catch(e) {} }
     sessao = null; eu = null; pessoas = []; pessoaAtual = null; modelos = []; gravar('madeirol_sessao', null);
@@ -597,7 +645,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   async function iniciarApp() {
     eu = await rpc('lemb_eu', { p_sessao: sessao });
     agoraServidor = eu.agora;
-    $('tela-login').classList.add('oculto'); $('tela-app').classList.remove('oculto');
+    $('tela-login').classList.add('oculto'); $('tela-cadastro').classList.add('oculto'); $('tela-app').classList.remove('oculto');
     $('quem').classList.remove('oculto'); $('topo-marcador').classList.add('oculto');
     $('quem-nome').textContent = eu.nome;
     document.querySelectorAll('.so-mestre').forEach(el => el.classList.toggle('oculto', !eu.mestre));
