@@ -132,6 +132,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--cocoa);box-shadow:0 0
 .mini-previa iframe{position:absolute;top:0;left:0;width:400%;height:400%;border:0;transform:scale(.25);transform-origin:0 0;pointer-events:none}
 .mini-vazio{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;background:var(--milk)}
 @media(max-width:600px){.seg{grid-template-columns:1fr}.seg label+label{border-left:0;border-top:1px solid var(--line)}}
+.destinos{display:grid;gap:8px;max-height:46vh;overflow:auto}
+.destino{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #EAD9CC;border-radius:14px;background:var(--paper);cursor:pointer}
+.destino:hover{border-color:var(--brown)}
+.destino input{width:18px;height:18px;accent-color:var(--cocoa);flex-shrink:0}
+.destino .avatar{width:34px;height:34px;font-size:14px}
+.destino.ja{opacity:.55}
 .login{max-width:440px;margin:clamp(20px,6vh,60px) auto 0}
 .troca{text-align:center;font-size:14px}
 .troca .voltar{font-size:14px}
@@ -386,6 +392,18 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       <button type="submit" class="btn">Salvar</button>
       <button type="button" class="btn perigo" id="btn-excluir-pessoa" style="margin-left:auto">Excluir pessoa</button>
     </div>
+  </form>
+</div>
+
+<!-- ===== janela: enviar lembrete ===== -->
+<div class="modal oculto" id="modal-enviar" role="dialog" aria-modal="true" aria-labelledby="me-titulo">
+  <form class="cartao" id="form-enviar" style="width:min(560px,100%)">
+    <div class="modal-cab"><h3 id="me-titulo">Enviar <strong>lembrete</strong></h3><button type="button" class="fechar" data-fechar aria-label="Fechar">×</button></div>
+    <p class="aviso" id="me-info"></p>
+    <div class="acoes" style="justify-content:space-between"><span class="rotulo" style="margin:0">Para quem</span><button type="button" class="voltar" id="me-todos">Marcar todos</button></div>
+    <div class="destinos" id="me-pessoas"></div>
+    <p class="erro" id="me-erro"></p>
+    <div class="acoes"><button type="submit" class="btn" id="btn-enviar">Enviar</button></div>
   </form>
 </div>
 
@@ -723,12 +741,14 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
           <div class="item-sub">${esc(regra(l))}<br>${p ? 'Próximo: <b>' + esc(fmtData(p)) + '</b>' : (l.ativo ? 'Sem data futura' : 'Não vai aparecer enquanto estiver pausado')}</div>
         </div>
         ${eu.mestre ? `<div class="acoes">
+          <button type="button" class="btn sec peq" data-enviar="${l.id}">Enviar para…</button>
           <button type="button" class="btn sec peq" data-testar="${l.id}">Testar agora</button>
           <button type="button" class="btn peq" data-editar="${l.id}">Editar</button>
         </div>` : ''}
       </div>`;
     }).join('');
     el.querySelectorAll('[data-editar]').forEach(b => b.addEventListener('click', () => abrirEditor(usuarioId, itens.find(x => x.id === b.dataset.editar))));
+    el.querySelectorAll('[data-enviar]').forEach(b => b.addEventListener('click', () => abrirEnviar(itens.find(x => x.id === b.dataset.enviar), usuarioId)));
     el.querySelectorAll('[data-testar]').forEach(b => b.addEventListener('click', async () => {
       try { await rpc('lemb_lembrete_testar', { p_sessao: sessao, p_id: b.dataset.testar }); aviso('Pedido enviado. Aparece na tela da pessoa em até 1 minuto (se o aplicativo estiver ligado).'); }
       catch(e) { tratarErro(e); }
@@ -934,6 +954,59 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     if (!$('aba-conectados').classList.contains('oculto')) { if (pessoaAtual) carregarLembretes(pessoaAtual.id, $('lista-pessoa')); carregarPessoas(); }
   }
   $('btn-novo-meu').addEventListener('click', () => abrirEditor(eu.id, null));
+
+  /* --- enviar lembrete para outras pessoas --- */
+  let envio = null;
+  async function abrirEnviar(l, donoId) {
+    envio = l;
+    $('me-erro').textContent = '';
+    $('me-info').innerHTML = `<b>${esc(l.titulo)}</b> · ${esc(regra(l))}<br>Uma cópia igual vai para cada pessoa marcada. Depois dá para mudar a de cada uma separado.`;
+    $('me-pessoas').innerHTML = '<div class="vazio">Carregando…</div>';
+    abrirModal('modal-enviar');
+    try {
+      const r = await rpc('lemb_usuarios_listar', { p_sessao: sessao });
+      pessoas = r.usuarios; agoraServidor = r.agora;
+      const outros = pessoas.filter(p => p.id !== donoId);
+      if (!outros.length) { $('me-pessoas').innerHTML = '<div class="vazio">Ainda não tem outras pessoas. Adicione em <b>Conectados</b>.</div>'; return; }
+      // quem já tem um lembrete com o mesmo título
+      const jaTem = new Set();
+      await Promise.all(outros.map(async p => {
+        const ls = lembretesCache[p.id] || await rpc('lemb_lembretes_listar', { p_sessao: sessao, p_usuario: p.id }).catch(() => []);
+        lembretesCache[p.id] = ls;
+        if (ls.some(x => x.titulo.trim().toLowerCase() === l.titulo.trim().toLowerCase())) jaTem.add(p.id);
+      }));
+      $('me-pessoas').innerHTML = outros.map(p => `<label class="destino${jaTem.has(p.id) ? ' ja' : ''}">
+          <input type="checkbox" value="${p.id}">
+          <div class="avatar">${esc(inicial(p.nome))}</div>
+          <div><div class="pessoa-nome">${esc(p.nome)}</div><div class="pessoa-sub">@${esc(p.usuario)}${jaTem.has(p.id) ? ' · já tem um lembrete com esse título' : ''}</div></div>
+        </label>`).join('');
+    } catch(e) { tratarErro(e, $('me-erro')); }
+  }
+  $('me-pessoas').addEventListener('change', () => { $('me-erro').textContent = ''; });
+  $('me-todos').addEventListener('click', () => {
+    const cx = [...document.querySelectorAll('#me-pessoas input')];
+    const marcar = cx.some(c => !c.checked);
+    cx.forEach(c => c.checked = marcar);
+    $('me-todos').textContent = marcar ? 'Desmarcar todos' : 'Marcar todos';
+  });
+  $('form-enviar').addEventListener('submit', async e => {
+    e.preventDefault();
+    const ids = [...document.querySelectorAll('#me-pessoas input:checked')].map(c => c.value);
+    if (!ids.length) return $('me-erro').textContent = 'Marque pelo menos uma pessoa.';
+    const b = $('btn-enviar'); b.disabled = true; b.textContent = 'Enviando…';
+    const u = ultima(envio, new Date());
+    const base = { tipo: envio.tipo, dias_mes: envio.dias_mes, dias: envio.dias, data: envio.data, hora: envio.hora,
+      titulo: envio.titulo, mensagem: envio.mensagem, destaque: envio.destaque, ativo: envio.ativo,
+      modelo_id: envio.modelo_id, link: envio.link || '', ack: u ? chaveData(u) : '' };
+    let ok = 0;
+    try {
+      for (const id of ids) { await rpc('lemb_lembrete_salvar', { p_sessao: sessao, p_dados: { ...base, id: null, usuario_id: id } }); delete lembretesCache[id]; ok++; }
+      fecharModal('modal-enviar');
+      aviso(`Lembrete enviado para ${ok} pessoa${ok === 1 ? '' : 's'}. Chega no computador em até 1 minuto.`);
+      recarregarListaAtual();
+    } catch(e2) { tratarErro(e2, $('me-erro')); if (ok) aviso(`Enviado para ${ok} antes do erro.`); }
+    b.disabled = false; b.textContent = 'Enviar';
+  });
 
   /* --- conectados --- */
   async function carregarPessoas() {
