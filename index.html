@@ -301,7 +301,6 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
           </div>
           <div class="acoes">
             <button type="button" class="btn" id="btn-novo-pessoa">+ Novo lembrete</button>
-            <button type="button" class="btn sec" id="btn-app-pessoa">Baixar aplicativo desta pessoa</button>
             <button type="button" class="btn sec" id="btn-editar-pessoa">Editar pessoa</button>
           </div>
         </div>
@@ -318,16 +317,15 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
       <p class="sub">É ele que coloca o comunicado na tela, na frente de tudo, no horário certo.</p>
       <div class="cartao">
         <div class="app-linha"><img class="app-icone" src="data:image/png;base64,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" alt=""><div>
-          <p class="aviso" style="font-size:14px">O aplicativo liga junto com o Windows, fica com o sino perto do relógio e busca sozinho os lembretes desta pessoa a cada minuto. <b>Depois de instalado, não precisa mexer mais no computador</b>: tudo que for mudado aqui no painel chega nele.</p>
+          <p class="aviso" style="font-size:14px">O aplicativo liga junto com o Windows, fica com o sino perto do relógio e busca sozinho os lembretes de quem está com o login aberto a cada minuto. <b>Depois de instalado, não precisa mexer mais no computador</b>: tudo que for mudado aqui no painel chega nele.</p>
           <p class="aviso" id="app-status" style="margin-top:10px"></p>
         </div></div>
         <ol class="passos">
-          <li>Clique em <b>Baixar aplicativo</b>. Se o Chrome avisar sobre o arquivo, clique em <b>Manter</b>.</li>
+          <li>No computador onde o lembrete vai aparecer, entre com o <b>seu</b> login e clique em <b>Baixar aplicativo</b>. Se o Chrome avisar sobre o arquivo, clique em <b>Manter</b>.</li>
           <li>Abra <b>Instalar Madeirol Lembretes</b> (dois cliques). Se aparecer a tela azul do Windows: <b>Mais informações → Executar assim mesmo</b>.</li>
           <li>Espere a janela preta terminar (até 30 segundos). Aparece o sino na Área de Trabalho e perto do relógio.</li>
         </ol>
         <div class="acoes"><button type="button" class="btn" id="btn-baixar-meu">Baixar aplicativo</button><button type="button" class="btn sec" id="btn-remover-app">Baixar desinstalador</button></div>
-        <p class="aviso so-mestre">Dica: em <b>Conectados</b>, cada pessoa tem o botão <b>Baixar aplicativo desta pessoa</b>. Assim você instala no computador dela sem precisar entrar com o login dela.</p>
       </div>
     </section>
   </section>
@@ -1138,7 +1136,6 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
   $('btn-voltar-pessoas').addEventListener('click', mostrarListaPessoas);
   $('btn-atualizar-pessoas').addEventListener('click', () => { carregarPessoas(); aviso('Lista atualizada.'); });
   $('btn-novo-pessoa').addEventListener('click', () => abrirEditor(pessoaAtual.id, null));
-  $('btn-app-pessoa').addEventListener('click', () => baixarInstalador(pessoaAtual.token_app, pessoaAtual.nome));
 
   /* --- pessoa (criar / editar) --- */
   let pessoaEditando = null;
@@ -1285,7 +1282,7 @@ body.modo-alerta>header,body.modo-alerta>main{display:none}
     if (!token) return aviso('Não achei o código do aplicativo. Atualize a página.');
     const primeiro = String(nome).trim().split(/\s+/)[0].normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]/g, '');
     baixar(`Instalar Madeirol Lembretes - ${primeiro || 'pessoa'}.bat`, gerarInstalador(token, nome));
-    aviso(`Baixado. Rode no computador de ${nome} (dois cliques).`);
+    aviso('Baixado. Abra o arquivo Instalar Madeirol Lembretes (dois cliques).');
   }
   $('btn-remover-app').addEventListener('click', () => baixar('Remover Madeirol Lembretes.bat', gerarDesinstalador()));
 
